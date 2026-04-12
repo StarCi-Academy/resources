@@ -1,98 +1,91 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Saga pattern (choreography) — NestJS demo
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+This monorepo demonstrates a **choreography-style saga**: services communicate over **Apache Kafka**, each with its own **SQLite** database (TypeORM). There is no central orchestrator; **compensation** runs when inventory cannot fulfill the order.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Architecture
 
-## Description
+| Service | Port | HTTP / Kafka |
+|---------|------|--------------|
+| **order** | 3001 | `POST /order` — create order; consumes topic `inventory-events` |
+| **payment** | 3002 | Kafka consumer on `inventory-events` (refund on out-of-stock); emits `payment-events` on refund |
+| **inventory** | 3003 | `POST /inventory/check` — deduct stock or emit failure events |
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+**Main topic:** `inventory-events` — payload includes `eventType`:
 
-## Project setup
+- `INVENTORY_OUT_OF_STOCK` → order set to `CANCELLED`; payment record (if any) → `REFUNDED` and emit `PAYMENT_REFUNDED` on `payment-events`.
+- `INVENTORY_DEDUCTED` → order → `COMPLETED`.
 
-```bash
-$ npm install
-```
+**Startup seed data** (for quick demos):
 
-## Compile and run the project
+- `productId: 1` — stock **0** (failure / compensation path).
+- `productId: 2` — stock **100** (success path).
+
+## Prerequisites
+
+- Node.js (version compatible with the project)
+- Docker (for Kafka)
+
+## Run Kafka
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+docker compose -f containers/kafka.yaml up -d
 ```
 
-## Run tests
+Default broker: `localhost:9092` (hard-coded in the apps).
+
+## Install
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npm install
 ```
 
-## Deployment
+## Run each service
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+Use **three terminals** (with Kafka running):
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+npx nest start order --watch
+npx nest start payment --watch
+npx nest start inventory --watch
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+> In this monorepo, the default project in `nest-cli.json` is not these apps—always pass the app name as above.
 
-## Resources
+## Try the flow (`curl` example)
 
-Check out a few resources that may come in handy when working with NestJS:
+1. Create an order (order service):
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+```bash
+curl -X POST http://localhost:3001/order -H "Content-Type: application/json" -d "{\"productId\":2,\"quantity\":1}"
+```
 
-## Support
+Note the order `id` from the response.
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+2. Check / deduct inventory (inventory service), replace `ORDER_ID` with that id:
 
-## Stay in touch
+```bash
+curl -X POST http://localhost:3003/inventory/check -H "Content-Type: application/json" -d "{\"orderId\":ORDER_ID,\"productId\":2,\"quantity\":1}"
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Enough stock → order becomes **COMPLETED** (via `INVENTORY_DEDUCTED`).
+- `productId: 1` or quantity above stock → **OUT_OF_STOCK** → order **CANCELLED** and payment (if present for that `orderId`) **REFUNDED**.
+
+Creating a payment record can be done via `PaymentService.createPayment(orderId)` in code or by extending the API—the payment controller currently only handles Kafka events.
+
+## Stack
+
+- [NestJS](https://nestjs.com/) 11 — Kafka microservices (`@nestjs/microservices`, `kafkajs`)
+- [TypeORM](https://typeorm.io/) + `sqlite3` — one DB file per app (`order.sqlite`, `payment.sqlite`, `inventory.sqlite`)
+
+## Scripts (`package.json`)
+
+| Script | Description |
+|--------|-------------|
+| `npm run build` | Build the monorepo |
+| `npm run start:dev` | Use an app name: `npx nest start order --watch` (or `payment`, `inventory`) |
+| `npm run test` | Jest |
+| `npm run lint` | ESLint |
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+See `package.json` (`UNLICENSED` unless you change it).
