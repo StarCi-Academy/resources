@@ -28,7 +28,7 @@ This monorepo demonstrates a **choreography-style saga**: services communicate o
 ## Run Kafka
 
 ```bash
-docker compose -f containers/kafka.yaml up -d
+docker compose -f containers/docker-compose.yaml up -d
 ```
 
 Default broker: `localhost:9092` (hard-coded in the apps).

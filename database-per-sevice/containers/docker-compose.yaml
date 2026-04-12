@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: order_user
+      POSTGRES_PASSWORD: order_password
+      POSTGRES_DB: order_db
+    ports:
+      - "5432:5432"
+
+  mongodb:
+    image: mongo:6
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: inventory_user
+      MONGO_INITDB_ROOT_PASSWORD: inventory_password
+    ports:
+      - "27017:27017"
+
+# docker-compose -f containers/docker-compose.yaml up -d
