@@ -1,44 +1,29 @@
-# CQRS pattern — NestJS demo
+# CQRS Pattern — NestJS Demo
+# (EN: CQRS Pattern — NestJS Demo)
 
-This repository demonstrates the **Command Query Responsibility Segregation (CQRS)** pattern using NestJS. It separates data mutation operations (Commands) from data retrieval operations (Queries) into different bounded contexts to optimize for fast reads and complex business logic.
+Dự án minh họa pattern **Command Query Responsibility Segregation (CQRS)**. Tách biệt hoàn toàn thao tác thay đổi dữ liệu (Commands) và thao tác truy vấn dữ liệu (Queries) để tối ưu hóa hiệu năng và khả năng mở rộng.
+(EN: Demonstrates the **Command Query Responsibility Segregation (CQRS)** pattern. Completely separates data mutation (Commands) and data retrieval (Queries) to optimize performance and scalability.)
 
-## Architecture
+---
 
-| Service | Port | Database | Responsibilities |
-|---------|------|----------|------------------|
-| **command** | 3000 | PostgreSQL | Dispatches commands via `CommandBus`. Updates the Write Model. Publishes `CustomerProfileUpdatedEvent`. |
-| **query** | 3001 | Elasticsearch | Dispatches queries via `QueryBus`. Listens to `CustomerProfileUpdatedEvent` to sync the materialized Read Model. |
+## 🛠️ 1. Thiết lập (Setup & Run)
 
-- **Write model (Commands):** Handles creating, updating, and deleting data using **PostgreSQL**.
-- **Read model (Queries):** Handles retrieving data using a flattened, read-optimized document in **Elasticsearch**.
-
-*(Note: In a true distributed microservice environment, the `CustomerProfileUpdatedEvent` would be transmitted over a message broker like Kafka or RabbitMQ. For this demo, we use the NestJS EventBus within CQRS context).*
-
-## Prerequisites
-
-- Node.js
-- Docker & Docker Compose (for the databases)
-
-## Run Databases (PostgreSQL + Elasticsearch)
-
-Start the databases using the provided docker-compose file:
-
+### 1.1 Khởi chạy Databases (Docker) (EN: Run Databases)
+Sử dụng các file cấu hình trong thư mục `.docker/` (EN: Use config files in `.docker/`):
 ```bash
-docker-compose -f containers/docker-compose.yaml up -d
+# Khởi chạy PostgreSQL (Write Model)
+docker compose -f .docker/postgresql.yaml up -d
+
+# Khởi chạy Elasticsearch (Read Model)
+docker compose -f .docker/elasticsearch.yaml up -d
 ```
 
-## Install
-
-```bash
-npm install
-```
-
-## Run the CQRS services
-
-Use **two terminals** to run the separate applications:
+### 1.2 Chạy các services (EN: Run Services)
+Mở **2 terminal** để chạy song song:
 
 **Terminal 1 — Command handler (Write)**
 ```bash
+npm install
 npx nest start command --watch
 ```
 
@@ -47,32 +32,52 @@ npx nest start command --watch
 npx nest start query --watch
 ```
 
-## Try the flow (`curl` example)
+---
 
-1. **Update a customer profile via the Command app (Port 3000):**
+## 🏗️ 2. Kiến trúc (Architecture)
 
+| Module | Port | Database | Trách nhiệm (Responsibility) |
+|---------|------|----------|------------------|
+| **Command** | 3000 | PostgreSQL | Xử lý ghi dữ liệu thông qua `CommandBus`. Phát event sau khi update thành công. |
+| **Query** | 3001 | Elasticsearch | Xử lý đọc dữ liệu thông qua `QueryBus`. Lắng nghe event để đồng bộ Read Model. |
+
+---
+
+## 🔄 3. Luồng hệ thống (System Flow)
+
+Dữ liệu được tách biệt thành hai mô hình Write và Read:
+(EN: Data is split into two models: Write and Read:)
+
+```
+[Write Client] ───> [Command app] ───> [PostgreSQL]
+                        │               (Write Model)
+                        └─> [EventBus] ─────┐
+                                            │ (Pub/Sub)
+                                            ▼
+[Read Client] <─── [Query app] <──── [Elasticsearch]
+                        │               (Read Model)
+                        └─> [Sync projections]
+```
+
+---
+
+## 📡 4. Thử nghiệm (Try it out)
+
+### 4.1 Cập nhật thông tin qua bộ Command (Port 3000)
 ```bash
 curl -X POST http://localhost:3000/customer/update \
   -H "Content-Type: application/json" \
-  -d "{\"id\": \"123\", \"name\": \"John Doe\", \"email\": \"john@example.com\"}"
+  -d "{\"id\": \"123\", \"name\": \"Cuong\", \"email\": \"cuong@starci.vn\"}"
 ```
-*Behind the scenes: The Command app executes the business logic, saves to PostgreSQL, and emits an event. The Query app (or an event handler) updates the projection in Elasticsearch.*
 
-2. **Retrieve the customer profile via the Query app (Port 3001):**
-
+### 4.2 Truy vấn thông tin qua bộ Query (Port 3001)
 ```bash
 curl -X GET http://localhost:3001/customer/123
 ```
-*Behind the scenes: The Query app fetches the read-optimized document directly from Elasticsearch without complex JOINs.*
 
-## Important technical constraints to consider
+---
 
-- **Eventual Consistency:** The query model is updated asynchronously. Users might see stale data for a short time after an update.
-- **Increased Complexity:** Multiple databases, event schemas, and synchronization logic must be maintained.
-- **Event Loss:** Mechanisms like Event Sourcing or a Transactional Outbox are typically required to ensure the read database always stays in sync.
-
-## Stack
-
-- [NestJS](https://nestjs.com/) 11 — (`@nestjs/cqrs`)
-- PostgreSQL (`typeorm`, `pg`)
-- Elasticsearch (`@nestjs/elasticsearch`)
+## 📚 5. Những lưu ý kỹ thuật (Technical Constraints)
+- **Eventual Consistency:** Model Query được cập nhật bất đồng bộ, dữ liệu có thể trễ vài mili giây.
+- **Complexity:** Phải duy trì hai cơ sở dữ liệu và logic đồng bộ (projections).
+- **Reliability:** Cần dùng Kafka/RabbitMQ nếu triển khai microservices thực thụ.

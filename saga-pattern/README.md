@@ -1,91 +1,81 @@
-# Saga pattern (choreography) — NestJS demo
+# Saga Pattern (Choreography) — NestJS Demo
+# (EN: Saga Pattern (Choreography) — NestJS Demo)
 
-This monorepo demonstrates a **choreography-style saga**: services communicate over **Apache Kafka**, each with its own **SQLite** database (TypeORM). There is no central orchestrator; **compensation** runs when inventory cannot fulfill the order.
+Dự án minh họa **Choreography-based Saga**. Các microservice liên lạc thông qua **Apache Kafka**, mỗi service quản lý DB riêng (**SQLite**). Không có bộ điều phối trung tâm; thay vào đó, các service tự lắng nghe event và thực hiện logic bù đắp (**Compensation**) khi có lỗi xảy ra.
+(EN: Demonstrates a **Choreography-based Saga**. Services communicate via **Apache Kafka**, each managing its own **SQLite** DB. No central orchestrator; instead, services listen to events and perform **Compensation** logic when errors occur.)
 
-## Architecture
+---
 
-| Service | Port | HTTP / Kafka |
-|---------|------|--------------|
-| **order** | 3001 | `POST /order` — create order; consumes topic `inventory-events` |
-| **payment** | 3002 | Kafka consumer on `inventory-events` (refund on out-of-stock); emits `payment-events` on refund |
-| **inventory** | 3003 | `POST /inventory/check` — deduct stock or emit failure events |
+## 🛠️ 1. Thiết lập (Setup & Run)
 
-**Main topic:** `inventory-events` — payload includes `eventType`:
-
-- `INVENTORY_OUT_OF_STOCK` → order set to `CANCELLED`; payment record (if any) → `REFUNDED` and emit `PAYMENT_REFUNDED` on `payment-events`.
-- `INVENTORY_DEDUCTED` → order → `COMPLETED`.
-
-**Startup seed data** (for quick demos):
-
-- `productId: 1` — stock **0** (failure / compensation path).
-- `productId: 2` — stock **100** (success path).
-
-## Prerequisites
-
-- Node.js (version compatible with the project)
-- Docker (for Kafka)
-
-## Run Kafka
-
+### 1.1 Khởi chạy Message Broker (Docker) (EN: Run Kafka)
+Sử dụng cấu hình Kafka trong `.docker/` (EN: Use Kafka config in `.docker/`):
 ```bash
-docker compose -f containers/docker-compose.yaml up -d
+docker compose -f .docker/kafka.yaml up -d
 ```
 
-Default broker: `localhost:9092` (hard-coded in the apps).
-
-## Install
-
-```bash
-npm install
-```
-
-## Run each service
-
-Use **three terminals** (with Kafka running):
+### 1.2 Chạy các services (EN: Run Services)
+Mở **3 terminal** riêng biệt để chạy 3 ứng dụng:
 
 ```bash
+# Terminal 1: Order Service
 npx nest start order --watch
+
+# Terminal 2: Payment Service
 npx nest start payment --watch
+
+# Terminal 3: Inventory Service
 npx nest start inventory --watch
 ```
 
-> In this monorepo, the default project in `nest-cli.json` is not these apps—always pass the app name as above.
+---
 
-## Try the flow (`curl` example)
+## 🏗️ 2. Kiến trúc (Architecture)
 
-1. Create an order (order service):
+| Service | Port | Trách nhiệm (Responsibility) |
+|---------|------|--------------|
+| **Order** | 3001 | Tạo Order, lắng nghe `inventory-events` để Update trạng thái (Complete/Cancel). |
+| **Payment** | 3002 | Xử lý thanh toán, lắng nghe `inventory-events` để thực hiện hoàn tiền (Refund). |
+| **Inventory** | 3003 | Kiểm tra kho, trừ kho hoặc phát tán event thất bại (Out of stock). |
 
-```bash
-curl -X POST http://localhost:3001/order -H "Content-Type: application/json" -d "{\"productId\":2,\"quantity\":1}"
+---
+
+## 🔄 3. Luồng hệ thống (System Flow)
+
+Luồng Saga thành công và thất bại thông qua Event:
+(EN: Success and failure Saga flow via Events:)
+
+```
+[Order Created] ───> [Kafka: inventory-events]
+                         │
+                         ▼
+             [Inventory Check] ─── (Fail) ───┐
+                         │                   │
+                      (Success)         [Compensation]
+                         │                   │
+                         ▼                   ▼
+                 [Order Completed]    [Order Cancelled]
+                                      [Payment Refunded]
 ```
 
-Note the order `id` from the response.
+---
 
-2. Check / deduct inventory (inventory service), replace `ORDER_ID` with that id:
+## 📡 4. Thử nghiệm (Try it out)
 
+### Bước 1: Tạo Order mới (Success path)
 ```bash
-curl -X POST http://localhost:3003/inventory/check -H "Content-Type: application/json" -d "{\"orderId\":ORDER_ID,\"productId\":2,\"quantity\":1}"
+curl -X POST http://localhost:3001/order -d "{\"productId\":2,\"quantity\":1}"
 ```
 
-- Enough stock → order becomes **COMPLETED** (via `INVENTORY_DEDUCTED`).
-- `productId: 1` or quantity above stock → **OUT_OF_STOCK** → order **CANCELLED** and payment (if present for that `orderId`) **REFUNDED**.
+### Bước 2: Trigger kiểm tra kho (Thay ORDER_ID bằng id thực tế)
+```bash
+curl -X POST http://localhost:3003/inventory/check -d "{\"orderId\":ORDER_ID,\"productId\":2,\"quantity\":1}"
+```
+- **Success:** Dùng `productId: 2` (có hàng) -> Order sẽ thành `COMPLETED`.
+- **Compensation:** Dùng `productId: 1` (hết hàng) -> Order sẽ bị `CANCELLED` và Payment sẽ được `REFUNDED`.
 
-Creating a payment record can be done via `PaymentService.createPayment(orderId)` in code or by extending the API—the payment controller currently only handles Kafka events.
+---
 
-## Stack
-
-- [NestJS](https://nestjs.com/) 11 — Kafka microservices (`@nestjs/microservices`, `kafkajs`)
-- [TypeORM](https://typeorm.io/) + `sqlite3` — one DB file per app (`order.sqlite`, `payment.sqlite`, `inventory.sqlite`)
-
-## Scripts (`package.json`)
-
-| Script | Description |
-|--------|-------------|
-| `npm run build` | Build the monorepo |
-| `npm run start:dev` | Use an app name: `npx nest start order --watch` (or `payment`, `inventory`) |
-| `npm run test` | Jest |
-| `npm run lint` | ESLint |
-
-## License
-
-See `package.json` (`UNLICENSED` unless you change it).
+## 📚 5. Tham khảo (References)
+- [Saga Pattern Microservices](https://microservices.io/patterns/data/saga.html)
+- [NestJS Kafka Microservices](https://docs.nestjs.com/microservices/kafka)

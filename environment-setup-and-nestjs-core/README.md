@@ -1,188 +1,95 @@
 # Environment Setup & NestJS Core — Dependency Injection Demo
+# (EN: Environment Setup & NestJS Core — Dependency Injection Demo)
 
-A hands-on demonstration of **NestJS Dependency Injection** and the **Module System**, using two feature modules: `CatModule` and `DogModule`.
-
----
-
-## What this project demonstrates
-
-| Concept | Where to look |
-|---|---|
-| Nested DI chain (3 levels) | `src/modules/cat/` |
-| Encapsulation via `exports` | `cat.module.ts` |
-| Cross-module injection | `dog.service.ts` → injects `CatService` |
-| IoC singleton reuse | `CatFoodService` shared across `CatService` & `CatHealthService` |
-| `@Global()` module pattern | Documented in comments |
+Minh họa thực tế về **NestJS Dependency Injection** và **Hệ thống Module**, sử dụng chuỗi logic giữa hai modules: `CatModule` và `DogModule`.
+(EN: A hands-on demonstration of **NestJS Dependency Injection** and the **Module System**, through the logic flow between `CatModule` and `DogModule`.)
 
 ---
 
-## Folder structure
+## 🛠️ 1. Thiết lập & Chạy (Setup & Run)
 
+### 1.1 Cài đặt dependencies (EN: Install dependencies)
+```bash
+npm install
 ```
-src/
-├── modules/
-│   ├── cat/
-│   │   ├── cat-food.service.ts    ← Level 1: no dependencies
-│   │   ├── cat-health.service.ts  ← Level 2: injects CatFoodService
-│   │   ├── cat.service.ts         ← Level 3: injects CatFoodService + CatHealthService
-│   │   ├── cat.controller.ts
-│   │   └── cat.module.ts          ← exports only CatService (encapsulation!)
-│   └── dog/
-│       ├── dog.service.ts         ← injects CatService from CatModule
-│       ├── dog.controller.ts
-│       └── dog.module.ts          ← imports CatModule to unlock CatService
-├── app.module.ts                  ← root module, imports CatModule + DogModule
-└── main.ts
+
+### 1.2 Chạy ứng dụng (EN: Run application)
+```bash
+# Development mode
+npm run start:dev
 ```
 
 ---
 
-## The Dependency Graph
+## 🏗️ 2. Những khái niệm cốt lõi (Core Concepts Demonstrated)
 
-NestJS IoC Container resolves the **entire graph automatically** — no `new` keyword anywhere.
+| Khái niệm (Concept) | Vị trí (Location) | Diễn giải (Explanation) |
+|---|---|---|
+| **Nested DI chain** | `src/modules/cat/` | Chuỗi DI 3 cấp: Service A → Service B → Service C. |
+| **Encapsulation** | `cat.module.ts` | Chỉ export `CatService`, giữ các sub-services khác ở chế độ private. |
+| **Cross-module DI** | `dog.service.ts` | `DogService` inject `CatService` từ module khác. |
+| **Singleton Reuse** | `CatFoodService` | Một instance duy nhất được dùng chung bởi nhiều service khác nhau. |
+
+---
+
+## 🔄 3. Luồng hệ thống (System Flow)
+
+Sơ đồ Dependency Graph được NestJS IoC Container tự động khởi tạo:
+(EN: Dependency Graph automatically initialized by NestJS IoC Container:)
 
 ```
-AppModule
+AppModule (Root)
 ├── CatModule
-│   └── CatController
-│         └── CatService
-│               ├── CatFoodService        ← singleton #1
-│               └── CatHealthService
-│                     └── CatFoodService  ← same singleton #1 reused!
+│   ├── CatController
+│   └── CatService
+│         ├── CatFoodService (Singleton #1)
+│         └── CatHealthService
+│               └── CatFoodService (Reused Singleton #1)
 └── DogModule
       imports: [CatModule]
       └── DogController
             └── DogService
-                  └── CatService          ← cross-module injection
+                  └── CatService (Cross-module Injection)
 ```
 
-> **Key insight:** `CatFoodService` is registered once as a singleton. Even though both `CatService` and `CatHealthService` depend on it, the IoC Container injects the **same instance** into both — efficiently managed in RAM.
+> **Key insight:** NestJS quản lý các service dưới dạng **Singleton** mặc định. Dù `CatService` và `CatHealthService` đều cần `CatFoodService`, IoC Container chỉ tạo 1 instance duy nhất và inject vào cả hai nơi, giúp tiết kiệm bộ nhớ RAM.
+> (EN: NestJS manages services as **Singletons** by default. Even though multiple services depend on `CatFoodService`, the IoC Container creates only one instance and injects it into both, saving memory.)
 
 ---
 
-## API Endpoints
+## 📡 4. API Endpoints
 
-### Cat endpoints
+### 4.1 Cat Domain
+- `GET /cats`: Mèo tự giới thiệu.
+- `GET /cats/status`: Báo cáo sức khỏe (kích hoạt toàn bộ 3 cấp DI).
+- `GET /cats/feed/:food`: Cho mèo ăn (check menu từ `CatFoodService`).
 
-| Method | Path | Description |
-|---|---|---|
-| GET | `/cats` | Cat self-introduction |
-| GET | `/cats/status` | Full health report (exercises all 3 DI levels) |
-| GET | `/cats/feed/:food` | Feed the cat a specific food |
-
-```bash
-curl http://localhost:3000/cats
-curl http://localhost:3000/cats/status
-curl http://localhost:3000/cats/feed/tuna
-curl http://localhost:3000/cats/feed/pizza   # ❌ not on menu
-```
-
-### Dog endpoints
-
-| Method | Path | Description |
-|---|---|---|
-| GET | `/dogs` | Dog self-introduction |
-| GET | `/dogs/spy` | Dog spies on cat via cross-module CatService |
-| GET | `/dogs/steal/:food` | Dog tries to steal cat's food |
-
-```bash
-curl http://localhost:3000/dogs
-curl http://localhost:3000/dogs/spy
-curl http://localhost:3000/dogs/steal/salmon
-```
+### 4.2 Dog Domain
+- `GET /dogs/spy`: Chó "theo dõi" mèo bằng cách gọi `CatService` từ module của mèo.
+- `GET /dogs/steal/:food`: Chó cố gắng ăn trộm thức ăn của mèo.
 
 ---
 
-## Running the project
+## 📖 5. Giải thích kỹ thuật (Technical Breakdown)
 
-```bash
-# Install dependencies
-npm install
+### 5.1 `@Injectable()` — Đăng ký với IoC Container
+Mọi class được đánh dấu `@Injectable()` sẽ được NestJS quản lý vòng đời. Bạn không bao giờ gọi `new Service()` theo cách thủ công.
+(EN: Any class marked with `@Injectable()` is lifecycle-managed by NestJS. You never manually call `new Service()`.)
 
-# Development (watch mode)
-npm run start:dev
-
-# Production
-npm run start:prod
+### 5.2 Constructor Injection
+NestJS đọc TypeScript metadata để biết service nào cần được inject vào constructor:
+(EN: NestJS reads TypeScript metadata to know which service should be injected into the constructor:)
+```ts
+constructor(private readonly catService: CatService) {}
 ```
+
+### 5.3 Đóng gói Module (Encapsulation)
+Mặc định, mọi service trong module đều là **private**. Để module khác có thể sử dụng, bạn PHẢI export nó trong module source.
+(EN: By default, all services in a module are **private**. To let other modules use them, you MUST export them in the source module.)
 
 ---
 
-## Key DI concepts explained
+## 📚 6. Tài liệu tham khảo (References)
 
-### 1. `@Injectable()` — registering with the IoC Container
-
-```typescript
-@Injectable()
-export class CatFoodService {
-  getMenu(): string[] { ... }
-}
-```
-
-Decorating a class with `@Injectable()` hands its lifecycle to NestJS. You never call `new CatFoodService()` — the Container does it for you.
-
-### 2. Constructor injection
-
-```typescript
-@Injectable()
-export class CatHealthService {
-  constructor(private readonly catFoodService: CatFoodService) {}
-  //           ↑ NestJS reads the TypeScript metadata and injects automatically
-}
-```
-
-### 3. Encapsulation — private vs exported providers
-
-By default, all providers inside a module are **private**. Only explicitly exported providers are accessible to other modules.
-
-```typescript
-// cat.module.ts
-@Module({
-  providers: [CatFoodService, CatHealthService, CatService],
-  exports: [CatService],  // CatFoodService & CatHealthService stay private!
-})
-export class CatModule {}
-```
-
-### 4. Cross-module injection
-
-To use `CatService` inside `DogModule`, you must import `CatModule`:
-
-```typescript
-// dog.module.ts
-@Module({
-  imports: [CatModule],  // ← unlocks all of CatModule's exports
-  providers: [DogService],
-})
-export class DogModule {}
-```
-
-Forgetting this import causes a runtime error:
-```
-Nest can't resolve dependencies of the DogService (?).
-Please make sure that the argument CatService is
-available in the DogModule context.
-```
-
-### 5. Global modules
-
-For utility services used everywhere (e.g., `DatabaseService`, `ConfigService`), you can skip importing their module every time:
-
-```typescript
-@Global()
-@Module({
-  providers: [ConfigService],
-  exports: [ConfigService],
-})
-export class ConfigModule {}
-```
-
-> ⚠️ Use `@Global()` sparingly — it hides dependencies and makes modules harder to reason about in isolation.
-
----
-
-## References
-
-- [NestJS First Steps](https://docs.nestjs.com/first-steps)
-- [Providers in NestJS](https://docs.nestjs.com/providers)
-- [Modules in NestJS](https://docs.nestjs.com/modules)
+- [NestJS Dependency Injection](https://docs.nestjs.com/providers)
+- [NestJS Modules System](https://docs.nestjs.com/modules)

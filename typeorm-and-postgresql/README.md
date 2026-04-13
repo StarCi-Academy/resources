@@ -1,88 +1,74 @@
 # TypeORM & PostgreSQL Relationship Demo
+# (EN: TypeORM & PostgreSQL Relationship Demo)
 
 Dự án minh họa cách thiết lập quan hệ database (1:1, 1:N, N:N) sử dụng TypeORM và PostgreSQL trong NestJS.
+(EN: Demonstrates setting up database relationships (1:1, 1:N, N:N) using TypeORM and PostgreSQL in NestJS.)
 
 ---
 
-## 🛠️ Thiết lập (Setup)
+## 🛠️ 1. Thiết lập (Setup & Run)
 
-### 1. Cài đặt dependencies (EN: Install dependencies)
+### 1.1 Khởi chạy Database (Docker) (EN: Run Database)
 ```bash
-npm install
-```
-
-### 2. Khởi chạy Database (Docker) (EN: Run Database)
-```bash
-# Sử dụng cấu hình mẫu trong .docker/ (EN: use sample config in .docker/)
+# Sử dụng cấu hình PostgreSQL (EN: Use PostgreSQL config)
 docker compose -f .docker/postgresql.yaml up --build -d
 ```
 
-### 3. Chạy ứng dụng (EN: Run application)
+### 1.2 Cài đặt & Chạy (EN: Install & Run)
 ```bash
+npm install
 npm run start:dev
 ```
 
 ---
 
-## 🏗️ Hệ thống thực thể & Quan hệ (Entities & Relations)
+## 🏗️ 2. Hệ thống thực thể & Quan hệ (Entities & Relations)
 
 Chúng ta sử dụng domain **Cat** làm trung tâm để minh họa:
+(EN: Using the **Cat** domain to illustrate standard relationships:)
 
-| Loại quan hệ | Entities | Diễn giải |
+| Loại (Type) | Thực thể (Entities) | Diễn giải (Explanation) |
 |---|---|---|
-| **1:1** (One-to-One) | `Cat` ↔ `CatPassport` | Mỗi con mèo có duy nhất 1 hộ chiếu. |
-| **1:N** (One-to-Many) | `Cat` ↔ `Toy` | Một con mèo có thể sở hữu nhiều đồ chơi. |
-| **N:N** (Many-to-Many) | `Cat` ↔ `Owner` | Một con mèo có nhiều chủ, và ngược lại. |
+| **1:1** | `Cat` ↔ `CatPassport` | Mỗi con mèo có duy nhất 1 hộ chiếu. (EN: 1 cat, 1 passport.) |
+| **1:N** | `Cat` ↔ `Toy` | Một con mèo có thể sở hữu nhiều đồ chơi. (EN: 1 cat, many toys.) |
+| **N:N** | `Cat` ↔ `Owner` | Một con mèo có nhiều chủ, và ngược lại. (EN: Many cats, many owners.) |
 
 ---
 
-## 🔄 Luồng hệ thống (System Flow)
+## 🔄 3. Luồng hệ thống (System Flow)
+
+Dữ liệu di chuyển qua các lớp xử lý chuẩn của NestJS:
+(EN: Data flows through standard NestJS processing layers:)
 
 ```
-Client (Postman/Curl) → Controller → Service → Repository → PostgreSQL
+Client (Postman/Curl)
+  │
+  ▼
+Controller (Entry Point)       <── Receive Request & Pass Data
+  │
+  ▼
+Service (Business Logic)       <── prepare → execute → confirm
+  │
+  ▼
+Repository (TypeORM)           <── Auto-generate SQL with JOINs
+  │
+  ▼
+PostgreSQL Database            <── Persistent Storage
 ```
 
-1. **Controller:** Tiếp nhận HTTP Request.
-2. **Service:** Xử lý logic theo pattern `prepare → execute → confirm`.
-3. **Repository:** TypeORM tự tạo câu lệnh SQL với `JOIN` khi dùng `{ relations: [...] }`.
-4. **PostgreSQL:** Lưu trữ dữ liệu với toàn vẹn khóa ngoại.
+1. **Service Layer:** Triển khai logic theo pattern `prepare → execute → confirm`.
+2. **TypeORM:** Tự tạo SQL `JOIN` khi sử dụng thuộc tính `{ relations: [...] }` giúp lấy data lồng nhau chỉ trong 1 lần query.
 
 ---
 
-## 📡 API Endpoints
+## 📡 4. API Endpoints
 
-### 1. Lấy danh sách kèm JOIN (EN: Get all with JOIN)
-**GET** `/cats`
-Trả về toàn bộ mèo cùng với passport, toys và owners của chúng.
-
-### 2. Tạo mèo mới (CASCADE) (EN: Create new cat)
-**POST** `/cats`
-```json
-{
-  "name": "Nyan Cat",
-  "passport": { "passportNumber": "CAT-123" },
-  "toys": [{ "name": "Soft Ball" }, { "name": "Fake Mouse" }],
-  "owners": [{ "name": "Alice" }, { "name": "Bob" }]
-}
-```
-*Ghi chú: Nhờ `cascade: true`, TypeORM sẽ tự động lưu các bảng liên quan.*
-
-### 3. Xem chi tiết (EN: Get details)
-**GET** `/cats/:id`
+- `GET /cats`: Lấy toàn bộ mèo kèm theo Joins dữ liệu từ passport, toys và owners.
+- `POST /cats`: Tạo mèo mới. Nhờ `cascade: true`, bạn có thể gửi dữ liệu lồng nhau và TypeORM sẽ tự động lưu vào tất cả các bảng.
+- `GET /cats/:id`: Xem chi tiết một con mèo.
 
 ---
 
-## 📝 Quy tắc lập trình (Coding Rules)
-
-Dự án tuân thủ tiêu chuẩn **AGENTS.md**:
-- **Bilingual (VI+EN):** Mọi JSDoc và comment đều viết song ngữ.
-- **Line-by-line WHY:** Giải thích lý do của các bước logic quan trọng.
-- **Barrel Export:** Sử dụng `index.ts` để tối ưu việc import.
-- **Service Pattern:** `prepare → execute → confirm`.
-
----
-
-## 📚 Tài liệu tham khảo (References)
-
-- [TypeORM Relations](https://typeorm.io/relations)
-- [Nested Joins in TypeORM](https://typeorm.io/find-options#basic-options)
+## 📚 5. Tài liệu tham khảo (References)
+- [TypeORM Relations Official Guide](https://typeorm.io/relations)
+- [TypeORM Many-to-Many](https://typeorm.io/many-to-many-relations)

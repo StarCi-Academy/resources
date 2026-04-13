@@ -1,90 +1,72 @@
 # Mongoose & MongoDB Demo
+# (EN: Mongoose & MongoDB Demo)
 
 Dự án minh họa cách sử dụng Mongoose để quản lý dữ liệu NoSQL trong NestJS, bao gồm thiết lập Schema, Collection và các câu lệnh truy vấn cơ bản.
+(EN: This project demonstrates using Mongoose to manage NoSQL data in NestJS, including Schema/Collection setup and basic query syntax.)
 
 ---
 
-## 🛠️ Thiết lập (Setup)
+## 🛠️ 1. Thiết lập (Setup & Run)
 
-### 1. Cài đặt dependencies (EN: Install dependencies)
+### 1.1 Khởi chạy Database (Docker) (EN: Run Database)
 ```bash
-npm install
-```
-
-### 2. Khởi chạy Database (Docker) (EN: Run Database)
-```bash
-# Sử dụng cấu hình mẫu trong .docker/ (EN: use sample config in .docker/)
+# Sử dụng cấu hình MongoDB (EN: Use MongoDB config)
 docker compose -f .docker/mongodb.yaml up --build -d
 ```
 
-### 3. Chạy ứng dụng (EN: Run application)
+### 1.2 Cài đặt & Chạy (EN: Install & Run)
 ```bash
+npm install
 npm run start:dev
 ```
 
 ---
 
-## 🏗️ Cấu trúc Schema (Schema Structure)
+## 🏗️ 2. Cấu trúc Schema (Schema Structure)
 
 Chúng ta sử dụng **CatSchema** với các tính năng đặc thù của MongoDB:
-- **Index:** Đánh index cho trường `name` để tối ưu tìm kiếm.
-- **Timestamps:** Tự động quản lý `createdAt` và `updatedAt`.
-- **Dynamic fields:** `metadata` kiểu Object cho phép lưu trữ dữ liệu không định hình.
-- **Arrays:** `hobbies` lưu trữ danh sách sở thích.
+(EN: Using **CatSchema** with MongoDB-specific features:)
+
+- **Index:** Đánh index cho trường `name` để tối ưu tìm kiếm. (EN: Indexing 'name' for optimized search.)
+- **Timestamps:** Tự động quản lý `createdAt` và `updatedAt`. (EN: Automatic lifecycle management.)
+- **Dynamic fields:** `metadata` kiểu Object cho phép lưu trữ dữ liệu không định hình. (EN: Schema-less fields for flexible data.)
+- **Arrays:** `hobbies` lưu trữ danh sách sở thích. (EN: Native array support.)
 
 ---
 
-## 🔄 Luồng hệ thống (System Flow)
+## 🔄 3. Luồng hệ thống (System Flow)
+
+Luồng xử lý từ request đến storage (EN: Process flow from request to storage):
 
 ```
-Client → Controller → Service → Model (Mongoose) → MongoDB
+Client (Postman/Curl)
+  │
+  ▼
+Controller (Entry)
+  │
+  ▼
+Service (API Logic)  <── prepare → execute → confirm
+  │
+  ▼
+Model (Mongoose)     <── Schema validation & Mapping
+  │
+  ▼
+MongoDB Database     <── Document-based Storage
 ```
 
 ---
 
-## 📡 Mongoose Syntax Basics
+## 📡 4. Mongoose Syntax Basics
 
-Dưới đây là các syntax cơ bản được triển khai trong `CatService`:
-
-| Hành động | Mongoose Syntax | Giải thích |
+| Hành động (Action) | Mongoose Syntax | Giải thích (Explanation) |
 |---|---|---|
-| **Tạo mới** | `new this.catModel(data).save()` | Khởi tạo instance và lưu vào collection. |
-| **Tìm tất cả** | `this.catModel.find().exec()` | Lấy toàn bộ documents. |
-| **Sắp xếp & Giới hạn** | `.sort({ age: -1 }).limit(10)` | Sắp xếp tuổi giảm dần, lấy 10 bản ghi. |
-| **Tìm theo ID** | `this.catModel.findById(id).exec()` | Tìm nhanh bằng `_id`. |
-| **Cập nhật** | `findByIdAndUpdate(id, data, { new: true })` | Cập nhật và trả về bản ghi mới nhất. |
+| **Tạo mới** | `new this.catModel(data).save()` | Khởi tạo và lưu document. (EN: Create & save.) |
+| **Tìm tất cả** | `.find().exec()` | Lấy toàn bộ documents. (EN: Get all.) |
+| **Sắp xếp** | `.sort({ age: -1 })` | Sắp xếp theo tuổi giảm dần. (EN: Sort by age desc.) |
+| **Cập nhật** | `findByIdAndUpdate(id, data)` | Cập nhật và trả về bản ghi mới nhất. (EN: Atomic update.) |
 
 ---
 
-## 📡 API Endpoints
-
-### 1. Lấy danh sách (EN: Get all)
-**GET** `/cats`
-
-### 2. Tạo mèo mới (EN: Create new cat)
-**POST** `/cats`
-```json
-{
-  "name": "Luna",
-  "age": 2,
-  "breed": "British Shorthair",
-  "hobbies": ["Sleeping", "Eating"],
-  "metadata": {
-    "color": "Gray",
-    "weight": "4kg"
-  }
-}
-```
-
-### 3. Tìm kiếm theo tên (EN: Search by name)
-**GET** `/cats/search?name=Luna`
-
-### 4. Cập nhật (EN: Update)
-**PUT** `/cats/:id`
-
----
-
-## 📚 Tài liệu tham khảo (References)
-
-- [NestJS Mongoose Introduction](https://docs.nestjs.com/techniques/mongodb)
-- [Mongoose Documentation](https://mongoosejs.com/docs/guide.html)
+## 📚 5. Tài liệu tham khảo (References)
+- [NestJS Mongoose Guide](https://docs.nestjs.com/techniques/mongodb)
+- [Mongoose Official Documentation](https://mongoosejs.com/docs/guide.html)
