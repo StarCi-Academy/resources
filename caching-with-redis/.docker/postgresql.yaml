@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  # Primary Database (EN: Primary Database)
+  postgres:
+    image: postgres:15-alpine
+    container_name: starci-postgres-cache
+    environment:
+      POSTGRES_USER: starci_user
+      POSTGRES_PASSWORD: starci_password
+      POSTGRES_DB: starci_db
+    ports:
+      - '5433:5432' # Dùng port 5433 để tránh đụng độ với demo trước (EN: Use 5433 to avoid collision)
+    restart: always
+
+volumes:
+  postgres_data:
+
+# Run command:
+# docker compose -f .docker/postgresql.yaml up --build -d

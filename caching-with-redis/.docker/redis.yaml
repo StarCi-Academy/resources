@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  # Layer 3 Cache Storage (EN: Layer 3 Cache Storage)
+  redis:
+    image: redis:7-alpine
+    container_name: starci-redis
+    ports:
+      - '6379:6379'
+    restart: always
+
+# Run command:
+# docker compose -f .docker/redis.yaml up --build -d

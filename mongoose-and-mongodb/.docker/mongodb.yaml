@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: starci-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: starci_admin
+      MONGO_INITDB_ROOT_PASSWORD: starci_password
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+    restart: always
+
+volumes:
+  mongodb_data:
+
+# Run command:
+# docker compose -f .docker/mongodb.yaml up --build -d
