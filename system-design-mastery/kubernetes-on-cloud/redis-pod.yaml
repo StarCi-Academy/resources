@@ -1,0 +1,22 @@
+# Khai báo API version cho Pod (EN: declare API version for Pod resource)
+apiVersion: v1
+# Loại tài nguyên là Pod (EN: resource type is Pod)
+kind: Pod
+metadata:
+  # Tên Pod Redis (EN: Redis Pod name)
+  name: redis-pod
+  labels:
+    # Label để Service selector match đúng Pod này (EN: label for Service selector to match this Pod)
+    app: redis
+spec:
+  containers:
+    - # Tên container Redis bên trong Pod (EN: Redis container name inside the Pod)
+      name: redis
+      # Dùng image Redis chính thức từ Docker Hub (EN: use official Redis image from Docker Hub)
+      image: redis:7-alpine
+      ports:
+        - # Cổng mặc định Redis (EN: default Redis port)
+          containerPort: 6379
+
+# Run command:
+# kubectl apply -f redis-pod.yaml

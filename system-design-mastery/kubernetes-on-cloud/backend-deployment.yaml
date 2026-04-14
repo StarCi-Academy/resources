@@ -1,0 +1,53 @@
+# Khai báo API version cho Deployment (EN: declare API version for Deployment resource)
+apiVersion: apps/v1
+# Loại tài nguyên là Deployment — quản lý nhiều replica Pod (EN: resource type is Deployment — manages multiple Pod replicas)
+kind: Deployment
+metadata:
+  # Tên Deployment (EN: Deployment name)
+  name: example-backend
+  labels:
+    # Label để nhận diện nhóm resource backend (EN: label to identify backend resource group)
+    app: example-backend
+spec:
+  # Chạy 3 bản sao Pod để đảm bảo high availability (EN: run 3 Pod replicas for high availability)
+  replicas: 3
+  selector:
+    matchLabels:
+      # Selector phải khớp với label của Pod template bên dưới (EN: selector must match Pod template labels below)
+      app: example-backend
+  template:
+    metadata:
+      labels:
+        # Label gắn cho mỗi Pod được tạo bởi Deployment (EN: label attached to each Pod created by this Deployment)
+        app: example-backend
+    spec:
+      containers:
+        - # Tên container backend (EN: backend container name)
+          name: example-backend
+          # Image từ registry starci183 (EN: image from starci183 registry)
+          image: starci183/example-backend:latest
+          # Luôn pull image mới nhất từ registry (EN: always pull the latest image from registry)
+          imagePullPolicy: Always
+          ports:
+            - # Cổng HTTP mà NestJS lắng nghe (EN: HTTP port that NestJS listens on)
+              containerPort: 3000
+          env:
+            - # Host MySQL qua Kubernetes DNS nội bộ (EN: MySQL host via internal Kubernetes DNS)
+              name: MYSQL_HOST
+              value: "mysql-service.default.svc.cluster.local"
+            - name: MYSQL_PORT
+              value: "3306"
+            - name: MYSQL_USER
+              value: "root"
+            - name: MYSQL_PASSWORD
+              value: "root123"
+            - name: MYSQL_DATABASE
+              value: "demo_db"
+            - # Host Redis qua Kubernetes DNS nội bộ (EN: Redis host via internal Kubernetes DNS)
+              name: REDIS_HOST
+              value: "redis-service.default.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+
+# Run command:
+# kubectl apply -f backend-deployment.yaml

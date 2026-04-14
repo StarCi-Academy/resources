@@ -1,0 +1,23 @@
+# Khai báo API version cho Service (EN: declare API version for Service resource)
+apiVersion: v1
+# Loại tài nguyên là Service — expose Deployment ra bên ngoài cluster (EN: resource type is Service — expose Deployment outside the cluster)
+kind: Service
+metadata:
+  # Tên Service backend (EN: backend Service name)
+  name: example-backend-service
+spec:
+  # Dùng NodePort để truy cập từ bên ngoài cluster qua port cố định trên node (EN: use NodePort to access from outside the cluster via a fixed port on the node)
+  type: NodePort
+  selector:
+    # Selector khớp với label của Pod trong Deployment (EN: selector matches Pod labels in the Deployment)
+    app: example-backend
+  ports:
+    - # Cổng Service bên trong cluster (EN: Service port inside the cluster)
+      port: 3000
+      # Cổng container đích (EN: target container port)
+      targetPort: 3000
+      # Cổng cố định trên node — truy cập từ bên ngoài qua http://<node-ip>:30000 (EN: fixed port on node — access externally via http://<node-ip>:30000)
+      nodePort: 30000
+
+# Run command:
+# kubectl apply -f backend-service.yaml

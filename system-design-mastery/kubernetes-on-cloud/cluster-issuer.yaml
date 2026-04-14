@@ -1,0 +1,115 @@
+# ClusterIssuer for Let's Encrypt (Production)
+# Cấu hình ClusterIssuer để Cert-Manager lấy certificate từ Let's Encrypt
+# (EN: ClusterIssuer configuration for Cert-Manager to obtain certificates from Let's Encrypt)
+#
+# ClusterIssuer hoạt động ở phạm vi toàn cluster (không giới hạn namespace)
+# (EN: ClusterIssuer works cluster-wide — not limited to a single namespace)
+#
+# Yêu cầu: Cert-Manager đã được cài đặt
+# (EN: Requires: Cert-Manager installed)
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Email nhận thông báo khi certificate sắp hết hạn
+    # (EN: Email to receive notifications when certificate is about to expire)
+    # QUAN TRỌNG: Thay bằng email thực của bạn!
+    # (EN: IMPORTANT: Replace with your actual email!)
+    email: your-email@example.com
+    # ACME server của Let's Encrypt Production
+    # (EN: Let's Encrypt Production ACME server)
+    # Production: https://acme-v02.api.letsencrypt.org/directory
+    # Staging (test): https://acme-staging-v02.api.letsencrypt.org/directory
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Secret lưu ACME account private key
+    # (EN: Secret to store ACME account private key)
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    # Solvers — phương thức xác minh domain ownership
+    # (EN: Solvers — methods to verify domain ownership)
+    solvers:
+      # HTTP-01 Challenge — phổ biến nhất, dùng với Ingress
+      # (EN: HTTP-01 Challenge — most common, used with Ingress)
+      - http01:
+          ingress:
+            # Ingress class để Cert-Manager tạo temporary Ingress cho challenge
+            # (EN: Ingress class for Cert-Manager to create temporary Ingress for challenge)
+            class: nginx
+
+---
+# ClusterIssuer for Let's Encrypt (Staging) — dùng để test
+# (EN: ClusterIssuer for Let's Encrypt Staging — use for testing)
+#
+# Staging issuer không có rate limit như Production
+# (EN: Staging issuer has no rate limits like Production)
+# Certificate từ Staging sẽ không được trust bởi browsers
+# (EN: Certificates from Staging won't be trusted by browsers)
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # Email nhận thông báo (EN: notification email)
+    email: your-email@example.com
+    # ACME server Staging — dùng để test không bị rate limit
+    # (EN: Staging ACME server — use for testing without rate limits)
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: nginx
+
+---
+# ClusterIssuer for DNS-01 Challenge với DigitalOcean DNS
+# (EN: ClusterIssuer for DNS-01 Challenge with DigitalOcean DNS)
+#
+# Dùng khi cần wildcard certificate (*.example.com)
+# (EN: Use when you need wildcard certificate)
+#
+# Yêu cầu: DigitalOcean API token
+# (EN: Requires: DigitalOcean API token)
+
+# Bước 1: Tạo Secret chứa DO API token
+# (EN: Step 1: Create Secret containing DO API token)
+# kubectl create secret generic digitalocean-dns-token \
+#   --from-literal=access-token=YOUR_DO_API_TOKEN \
+#   -n cert-manager
+
+# apiVersion: cert-manager.io/v1
+# kind: ClusterIssuer
+# metadata:
+#   name: letsencrypt-dns-prod
+# spec:
+#   acme:
+#     email: your-email@example.com
+#     server: https://acme-v02.api.letsencrypt.org/directory
+#     privateKeySecretRef:
+#       name: letsencrypt-dns-prod-account-key
+#     solvers:
+#       # DNS-01 Challenge — cần API access đến DNS provider
+#       # (EN: DNS-01 Challenge — requires API access to DNS provider)
+#       - dns01:
+#           digitalocean:
+#             # Secret chứa DigitalOcean API token
+#             # (EN: Secret containing DigitalOcean API token)
+#             tokenSecretRef:
+#               name: digitalocean-dns-token
+#               key: access-token
+
+# Run command:
+# kubectl apply -f cluster-issuer.yaml
+#
+# Kiểm tra ClusterIssuer:
+# kubectl get clusterissuer
+# kubectl describe clusterissuer letsencrypt-prod
+#
+# Kiểm tra Certificate đã được cấp:
+# kubectl get certificates
+# kubectl describe certificate backend-tls-secret

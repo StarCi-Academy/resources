@@ -1,0 +1,103 @@
+# Ingress Resource for Backend Application
+# Cấu hình Ingress để route traffic HTTP/HTTPS đến backend
+# (EN: Ingress configuration to route HTTP/HTTPS traffic to backend)
+#
+# Yêu cầu: NGINX Ingress Controller và Cert-Manager đã được cài đặt
+# (EN: Requires: NGINX Ingress Controller and Cert-Manager installed)
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-ingress
+  # Annotations cho NGINX Ingress và Cert-Manager
+  # (EN: Annotations for NGINX Ingress and Cert-Manager)
+  annotations:
+    # Chỉ định Ingress class sử dụng NGINX
+    # (EN: Specify Ingress class to use NGINX)
+    kubernetes.io/ingress.class: nginx
+    # Kích hoạt Cert-Manager tự động cấp certificate từ ClusterIssuer
+    # (EN: Enable Cert-Manager to automatically provision certificate from ClusterIssuer)
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    # Redirect HTTP sang HTTPS (bắt buộc dùng HTTPS)
+    # (EN: Redirect HTTP to HTTPS — force HTTPS usage)
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Proxy body size — tăng nếu upload file lớn
+    # (EN: Proxy body size — increase if uploading large files)
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    # Proxy timeout — thời gian chờ backend response
+    # (EN: Proxy timeout — time to wait for backend response)
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+spec:
+  # Cấu hình IngressClass (có thể dùng thay cho annotation)
+  # (EN: IngressClass config — can be used instead of annotation)
+  ingressClassName: nginx
+  # Cấu hình TLS/HTTPS với certificate từ Let's Encrypt
+  # (EN: TLS/HTTPS config with certificate from Let's Encrypt)
+  tls:
+    - hosts:
+        # Thay bằng domain thực tế của bạn
+        # (EN: Replace with your actual domain)
+        - api.example.com
+      # Secret chứa TLS certificate — Cert-Manager tự động tạo
+      # (EN: Secret containing TLS certificate — Cert-Manager auto-creates)
+      secretName: backend-tls-secret
+  # Routing rules — định nghĩa cách route traffic đến services
+  # (EN: Routing rules — define how to route traffic to services)
+  rules:
+    - host: api.example.com
+      http:
+        paths:
+          # Route tất cả traffic đến backend service
+          # (EN: Route all traffic to backend service)
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                # Tên Service của backend (phải match với backend-service.yaml)
+                # (EN: Backend Service name — must match backend-service.yaml)
+                name: example-backend-service
+                port:
+                  number: 3000
+
+---
+# Ingress cho path cụ thể (ví dụ: /api)
+# (EN: Ingress for specific path — example: /api)
+# Uncomment nếu muốn route /api/* đến backend
+# (EN: Uncomment to route /api/* to backend)
+
+# apiVersion: networking.k8s.io/v1
+# kind: Ingress
+# metadata:
+#   name: backend-api-ingress
+#   annotations:
+#     kubernetes.io/ingress.class: nginx
+#     cert-manager.io/cluster-issuer: letsencrypt-prod
+#     nginx.ingress.kubernetes.io/ssl-redirect: "true"
+#     # Rewrite /api/xxx thành /xxx khi forward đến backend
+#     # (EN: Rewrite /api/xxx to /xxx when forwarding to backend)
+#     nginx.ingress.kubernetes.io/rewrite-target: /$2
+# spec:
+#   ingressClassName: nginx
+#   tls:
+#     - hosts:
+#         - api.example.com
+#       secretName: backend-tls-secret
+#   rules:
+#     - host: api.example.com
+#       http:
+#         paths:
+#           - path: /api(/|$)(.*)
+#             pathType: ImplementationSpecific
+#             backend:
+#               service:
+#                 name: example-backend-service
+#                 port:
+#                   number: 3000
+
+# Run command:
+# kubectl apply -f ingress.yaml
+#
+# Kiểm tra Ingress:
+# kubectl get ingress
+# kubectl describe ingress backend-ingress

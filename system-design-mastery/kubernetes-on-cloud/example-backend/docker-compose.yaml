@@ -1,0 +1,50 @@
+version: "3.8"
+
+services:
+  # Service backend NestJS — build từ Dockerfile và push lên registry starci183
+  # (EN: NestJS backend service — build from Dockerfile and push to starci183 registry)
+  example-backend:
+    # Image sẽ được tag theo registry starci183 (EN: image tagged for starci183 registry)
+    image: starci183/example-backend:latest
+    build:
+      # Build context là thư mục hiện tại (EN: build context is the current directory)
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      # Map cổng 3000 của host sang 3000 của container (EN: map host port 3000 to container port 3000)
+      - "3000:3000"
+    environment:
+      # Khi chạy local bằng docker-compose, trỏ vào container MySQL và Redis cùng network
+      # (EN: when running locally via docker-compose, point to MySQL and Redis containers on the same network)
+      - MYSQL_HOST=mysql
+      - MYSQL_PORT=3306
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root123
+      - MYSQL_DATABASE=demo_db
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - mysql
+      - redis
+
+  # Service MySQL cho môi trường phát triển local (EN: MySQL service for local development)
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: demo_db
+
+  # Service Redis cho môi trường phát triển local (EN: Redis service for local development)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+# Run command:
+# docker compose up --build -d
+#
+# Build và push image lên registry:
+# docker compose build
+# docker push starci183/example-backend:latest
