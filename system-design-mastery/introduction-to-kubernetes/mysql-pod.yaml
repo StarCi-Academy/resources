@@ -1,0 +1,26 @@
+# Chọn API version cho Pod resource (EN: select API version for Pod resource)
+apiVersion: v1
+# Khai báo loại tài nguyên là Pod (EN: declare this resource as a Pod)
+kind: Pod
+metadata:
+  # Đặt tên Pod để dễ quản lý/kubectl get (EN: set Pod name for easy management)
+  name: mysql-pod
+  labels:
+    # Gắn nhãn để filter/select Pod (EN: add label for filtering/selecting this Pod)
+    app: mysql
+spec:
+  containers:
+    - # Tên container bên trong Pod (EN: container name inside the Pod)
+      name: mysql
+      # Dùng image MySQL chính thức (EN: use official MySQL image)
+      image: mysql:8.0
+      ports:
+        - # Expose cổng mặc định MySQL (EN: expose default MySQL port)
+          containerPort: 3306
+      env:
+        - # Mật khẩu root bắt buộc để MySQL khởi động (EN: required root password for startup)
+          name: MYSQL_ROOT_PASSWORD
+          value: root123
+        - # Tạo sẵn database demo khi boot (EN: pre-create demo database on boot)
+          name: MYSQL_DATABASE
+          value: demo_db

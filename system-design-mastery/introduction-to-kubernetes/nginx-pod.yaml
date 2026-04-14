@@ -1,0 +1,19 @@
+# Chọn API version cho Pod resource (EN: select API version for Pod resource)
+apiVersion: v1
+# Khai báo loại tài nguyên là Pod (EN: declare this resource as a Pod)
+kind: Pod
+metadata:
+  # Đặt tên Pod để dễ nhận diện service web Nginx (EN: set Pod name to identify Nginx web service)
+  name: nginx-pod
+  labels:
+    # Gắn label để selector có thể match đúng Pod này (EN: add label so selectors can match this Pod)
+    app: nginx
+spec:
+  containers:
+    - # Tên container chạy Nginx bên trong Pod (EN: container name running Nginx inside the Pod)
+      name: nginx
+      # Dùng image Nginx chính thức để phục vụ HTTP (EN: use official Nginx image to serve HTTP)
+      image: nginx:latest
+      ports:
+        - # Expose cổng web mặc định của Nginx (EN: expose Nginx default web port)
+          containerPort: 80

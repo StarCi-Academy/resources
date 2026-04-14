@@ -1,0 +1,19 @@
+# Chọn API version cho Pod resource (EN: select API version for Pod resource)
+apiVersion: v1
+# Khai báo tài nguyên dạng Pod cho ứng dụng game (EN: declare Pod resource for the game app)
+kind: Pod
+metadata:
+  # Đặt tên Pod game 2048 để dễ quản lý trên cluster (EN: set 2048 Pod name for easy cluster management)
+  name: game-2048-pod
+  labels:
+    # Gắn label để phân loại workload game (EN: add label to categorize game workload)
+    app: game-2048
+spec:
+  containers:
+    - # Đặt tên container để đọc log/debug dễ hơn (EN: set container name for easier log/debug)
+      name: game-2048
+      # Dùng image public để chạy web game 2048 (EN: use public image to run the 2048 web game)
+      image: alexwhen/docker-2048:latest
+      ports:
+        - # Expose cổng HTTP để truy cập giao diện game (EN: expose HTTP port for game UI access)
+          containerPort: 80
