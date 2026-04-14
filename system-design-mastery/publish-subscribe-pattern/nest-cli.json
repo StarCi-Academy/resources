@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/publisher-service/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/publisher-service/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/publisher-service",
+  "projects": {
+    "publisher-service": {
+      "type": "application",
+      "root": "apps/publisher-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/publisher-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/publisher-service/tsconfig.app.json"
+      }
+    },
+    "subscriber-analytics": {
+      "type": "application",
+      "root": "apps/subscriber-analytics",
+      "entryFile": "main",
+      "sourceRoot": "apps/subscriber-analytics/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/subscriber-analytics/tsconfig.app.json"
+      }
+    },
+    "subscriber-notification": {
+      "type": "application",
+      "root": "apps/subscriber-notification",
+      "entryFile": "main",
+      "sourceRoot": "apps/subscriber-notification/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/subscriber-notification/tsconfig.app.json"
+      }
+    },
+    "subscriber-audit": {
+      "type": "application",
+      "root": "apps/subscriber-audit",
+      "entryFile": "main",
+      "sourceRoot": "apps/subscriber-audit/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/subscriber-audit/tsconfig.app.json"
+      }
+    }
+  }
+}

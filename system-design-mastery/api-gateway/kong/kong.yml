@@ -1,0 +1,50 @@
+# Kong Declarative Configuration (DB-less mode)
+# Cấu hình Kong theo chế độ declarative — không cần database
+# (EN: Kong declarative configuration — no database required)
+#
+# File này định nghĩa Services, Routes để Kong biết cách route traffic
+# (EN: This file defines Services and Routes so Kong knows how to route traffic)
+#
+# Luồng: Client → Kong :8000 → Route match → Service → Upstream NestJS
+# (EN: Flow: Client → Kong :8000 → Route match → Service → Upstream NestJS)
+
+_format_version: "3.0"
+
+# =========================
+# Services — đại diện cho upstream backends
+# (EN: Services — represent upstream backends)
+# =========================
+services:
+  # Service cho User API — route đến NestJS user-service :3001
+  # (EN: Service for User API — routes to NestJS user-service :3001)
+  - name: user-service
+    url: http://host.docker.internal:3001
+    routes:
+      # Route tất cả request có path /users đến user-service
+      # (EN: Route all requests with path /users to user-service)
+      - name: user-route
+        paths:
+          - /users
+        # Không strip prefix — NestJS controller đã dùng /users
+        # (EN: Don't strip prefix — NestJS controller already uses /users)
+        strip_path: false
+
+  # Service cho Product API — route đến NestJS product-service :3002
+  # (EN: Service for Product API — routes to NestJS product-service :3002)
+  - name: product-service
+    url: http://host.docker.internal:3002
+    routes:
+      - name: product-route
+        paths:
+          - /products
+        strip_path: false
+
+  # Service cho Order API — route đến NestJS order-service :3003
+  # (EN: Service for Order API — routes to NestJS order-service :3003)
+  - name: order-service
+    url: http://host.docker.internal:3003
+    routes:
+      - name: order-route
+        paths:
+          - /orders
+        strip_path: false

@@ -1,0 +1,47 @@
+# Docker Compose cho Kong API Gateway (DB-less mode)
+# (EN: Docker Compose for Kong API Gateway in DB-less mode)
+#
+# Kong chạy ở chế độ declarative — không cần database
+# (EN: Kong runs in declarative mode — no database needed)
+# Cấu hình được đọc từ file kong.yml mount vào container
+# (EN: Configuration is read from kong.yml mounted into the container)
+
+services:
+  kong:
+    image: docker.io/kong:3.9
+    container_name: kong-gateway
+    environment:
+      # Chế độ DB-less — không cần PostgreSQL cho Kong
+      # (EN: DB-less mode — no PostgreSQL needed for Kong)
+      KONG_DATABASE: "off"
+      # Đường dẫn file cấu hình declarative bên trong container
+      # (EN: Path to declarative config file inside the container)
+      KONG_DECLARATIVE_CONFIG: /kong/kong.yml
+      # Proxy lắng nghe trên port 8000 (EN: proxy listens on port 8000)
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      # Admin API lắng nghe trên port 8001 (EN: admin API listens on port 8001)
+      KONG_ADMIN_LISTEN: "0.0.0.0:8001"
+      # Log ra stdout để dễ debug (EN: log to stdout for easy debugging)
+      KONG_PROXY_ACCESS_LOG: /dev/stdout
+      KONG_ADMIN_ACCESS_LOG: /dev/stdout
+      KONG_PROXY_ERROR_LOG: /dev/stderr
+      KONG_ADMIN_ERROR_LOG: /dev/stderr
+    volumes:
+      # Mount file cấu hình Kong vào container
+      # (EN: Mount Kong configuration file into container)
+      - ../kong/kong.yml:/kong/kong.yml:ro
+    ports:
+      # Port proxy — client gửi request qua đây
+      # (EN: Proxy port — clients send requests through this)
+      - "8000:8000"
+      # Port admin API — quản lý Kong
+      # (EN: Admin API port — manage Kong)
+      - "8001:8001"
+    # Dùng host network để Kong có thể truy cập services chạy trên localhost
+    # (EN: Use extra_hosts so Kong can access services running on localhost)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+# Run command:
+# docker compose -f .docker/kong.yaml up --build -d

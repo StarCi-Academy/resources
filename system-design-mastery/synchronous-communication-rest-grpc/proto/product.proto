@@ -1,0 +1,40 @@
+// Protobuf definition cho Product Service gRPC
+// (EN: Protobuf definition for Product Service gRPC)
+
+syntax = "proto3";
+
+package product;
+
+// Service định nghĩa các RPC methods cho Product
+// (EN: Service defining RPC methods for Product)
+service ProductService {
+  // Lấy product theo ID (EN: get product by ID)
+  rpc FindOne (ProductById) returns (Product) {}
+  // Lấy danh sách tất cả products (EN: get all products)
+  rpc FindAll (Empty) returns (ProductList) {}
+  // Tạo product mới (EN: create new product)
+  rpc Create (CreateProductDto) returns (Product) {}
+}
+
+message ProductById {
+  int32 id = 1;
+}
+
+message CreateProductDto {
+  string name = 1;
+  double price = 2;
+  int32 stock = 3;
+}
+
+message Product {
+  int32 id = 1;
+  string name = 2;
+  double price = 3;
+  int32 stock = 4;
+}
+
+message ProductList {
+  repeated Product products = 1;
+}
+
+message Empty {}

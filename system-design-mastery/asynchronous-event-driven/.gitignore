@@ -1,0 +1,32 @@
+# compiled output
+/dist
+/node_modules
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs
+/.idea
+.vscode/*
+!.vscode/settings.json
+
+# dotenv
+.env
+.env.local
+
+# temp
+.temp
+.tmp
+
+# Database files
+*.sqlite

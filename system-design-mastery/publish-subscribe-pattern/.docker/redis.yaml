@@ -1,0 +1,17 @@
+# Docker Compose cho Redis (Pub/Sub)
+# (EN: Docker Compose for Redis used as Pub/Sub message broker)
+#
+# Redis Pub/Sub là broadcast pattern — tất cả subscribers đều nhận message
+# (EN: Redis Pub/Sub is broadcast pattern — all subscribers receive the message)
+
+services:
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: redis-pubsub
+    ports:
+      # Port mặc định Redis (EN: default Redis port)
+      - "6379:6379"
+    restart: unless-stopped
+
+# Run command:
+# docker compose -f .docker/redis.yaml up --build -d
