@@ -1,0 +1,55 @@
+# Cấu hình Helm chart Redis Cluster với image từ bitnamilegacy
+# (EN: Helm chart configuration for Redis Cluster using bitnamilegacy images)
+# Chart: oci://registry-1.docker.io/bitnamicharts/redis-cluster
+# File gốc: values.origin.yaml
+
+# Override tất cả image từ bitnami/* sang bitnamilegacy/*
+# (EN: Override all images from bitnami/* to bitnamilegacy/*)
+
+# Image chính Redis Cluster (EN: main Redis Cluster image)
+image:
+  registry: docker.io
+  repository: bitnamilegacy/redis-cluster
+  tag: 8.2.1-debian-12-r0
+  pullPolicy: IfNotPresent
+
+# Image cho init container volume-permissions (EN: volume-permissions init container image)
+volumePermissions:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/os-shell
+    tag: 12-debian-12-r51
+    pullPolicy: IfNotPresent
+
+# Image cho sysctl init container (EN: sysctl init container image)
+sysctlImage:
+  registry: docker.io
+  repository: bitnamilegacy/os-shell
+  tag: 12-debian-12-r51
+  pullPolicy: IfNotPresent
+
+# Image cho metrics exporter (EN: metrics exporter image)
+metrics:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/redis-exporter
+    tag: 1.76.0-debian-12-r0
+    pullPolicy: IfNotPresent
+
+# Cấu hình cluster — 6 nodes (3 master + 3 slave) (EN: cluster config — 6 nodes)
+cluster:
+  nodes: 6
+  replicas: 1
+
+# Xác thực — bật password (EN: authentication — enable password)
+usePassword: true
+password: "redis123"
+
+# Persistence — lưu trữ dữ liệu (EN: persistence — data storage)
+persistence:
+  enabled: true
+  size: 8Gi
+
+# Run command:
+# helm upgrade --install redis-cluster oci://registry-1.docker.io/bitnamicharts/redis-cluster -n database --values values.yaml --wait
