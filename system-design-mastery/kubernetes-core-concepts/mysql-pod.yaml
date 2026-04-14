@@ -1,0 +1,29 @@
+# Khai báo API version cho Pod (EN: declare API version for Pod resource)
+apiVersion: v1
+# Loại tài nguyên là Pod (EN: resource type is Pod)
+kind: Pod
+metadata:
+  # Tên Pod — Kubernetes DNS sẽ resolve qua Service, không phải Pod name (EN: Pod name — K8s DNS resolves via Service, not Pod name)
+  name: mysql-pod
+  labels:
+    # Label để Service selector match đúng Pod này (EN: label for Service selector to match this Pod)
+    app: mysql
+spec:
+  containers:
+    - # Tên container bên trong Pod (EN: container name inside the Pod)
+      name: mysql
+      # Dùng image MySQL chính thức từ Docker Hub (EN: use official MySQL image from Docker Hub)
+      image: mysql:8.0
+      ports:
+        - # Cổng mặc định MySQL (EN: default MySQL port)
+          containerPort: 3306
+      env:
+        - # Mật khẩu root bắt buộc để MySQL khởi động (EN: required root password for MySQL startup)
+          name: MYSQL_ROOT_PASSWORD
+          value: root123
+        - # Tạo sẵn database khi container boot (EN: pre-create database on container boot)
+          name: MYSQL_DATABASE
+          value: demo_db
+
+# Run command:
+# kubectl apply -f mysql-pod.yaml

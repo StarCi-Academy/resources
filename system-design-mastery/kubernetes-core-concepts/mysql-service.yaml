@@ -1,0 +1,20 @@
+# Khai báo API version cho Service (EN: declare API version for Service resource)
+apiVersion: v1
+# Loại tài nguyên là Service — tạo DNS nội bộ cho MySQL Pod (EN: resource type is Service — create internal DNS for MySQL Pod)
+kind: Service
+metadata:
+  # Tên Service — backend sẽ kết nối qua: mysql-service.default.svc.cluster.local (EN: Service name — backend connects via: mysql-service.default.svc.cluster.local)
+  name: mysql-service
+spec:
+  # ClusterIP (mặc định) — chỉ truy cập được từ bên trong cluster (EN: ClusterIP (default) — only accessible from inside the cluster)
+  type: ClusterIP
+  selector:
+    # Selector khớp với label của MySQL Pod (EN: selector matches MySQL Pod labels)
+    app: mysql
+  ports:
+    - # Cổng Service map sang cổng MySQL container (EN: Service port mapped to MySQL container port)
+      port: 3306
+      targetPort: 3306
+
+# Run command:
+# kubectl apply -f mysql-service.yaml
