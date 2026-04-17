@@ -6,15 +6,27 @@ Dự án minh họa **Choreography-based Saga**. Các microservice liên lạc t
 
 ---
 
-## 🛠️ 1. Thiết lập (Setup & Run)
+## 🛠️ 1. Thiết lập (Setup)
 
-### 1.1 Khởi chạy Message Broker (Docker) (EN: Run Kafka)
-Sử dụng cấu hình Kafka trong `.docker/` (EN: Use Kafka config in `.docker/`):
+### 1.1 Cài đặt phụ thuộc (Install Dependencies)
 ```bash
-docker compose -f .docker/kafka.yaml up -d
+npm install
 ```
 
-### 1.2 Chạy các services (EN: Run Services)
+---
+
+## 🚀 2. Chạy dịch vụ (Run Services)
+
+### 2.1 Khởi chạy Message Broker (Docker) (EN: Run Kafka)
+Sử dụng cấu hình Kafka trong `.docker/` (EN: Use Kafka config in `.docker/`):
+```bash
+docker compose -f .docker/kafka.yaml up --build -d
+```
+
+---
+
+## 💻 3. Chạy ứng dụng (Run Application)
+
 Mở **3 terminal** riêng biệt để chạy 3 ứng dụng:
 
 ```bash
@@ -30,7 +42,7 @@ npx nest start inventory --watch
 
 ---
 
-## 🏗️ 2. Kiến trúc (Architecture)
+## 🏗️ 4. Kiến trúc (Architecture)
 
 | Service | Port | Trách nhiệm (Responsibility) |
 |---------|------|--------------|
@@ -40,27 +52,32 @@ npx nest start inventory --watch
 
 ---
 
-## 🔄 3. Luồng hệ thống (System Flow)
+## 🔄 5. Luồng hệ thống (System Flow) (BẮT BUỘC)
 
-Luồng Saga thành công và thất bại thông qua Event:
-(EN: Success and failure Saga flow via Events:)
+Luồng Saga quản lý giao dịch phân tán thông qua Event:
+(EN: Saga flow managing distributed transactions via Events:)
 
 ```
-[Order Created] ───> [Kafka: inventory-events]
-                         │
-                         ▼
-             [Inventory Check] ─── (Fail) ───┐
-                         │                   │
-                      (Success)         [Compensation]
-                         │                   │
-                         ▼                   ▼
-                 [Order Completed]    [Order Cancelled]
-                                      [Payment Refunded]
+Client → Order Controller → Order Service → Kafka (order-events)
+Kafka (order-events) → Payment Service → Kafka (payment-events)
+Kafka (payment-events) → Inventory Service → Kafka (inventory-events)
+Kafka (inventory-events) → Order Service (Complete or Compensation)
 ```
+
+### 5.1 Success Flow
+1. **Order Service**: Tạo order (PENDING) -> Publish `OrderCreated`.
+2. **Payment Service**: Lắng nghe `OrderCreated` -> Thanh toán -> Publish `PaymentProcessed`.
+3. **Inventory Service**: Lắng nghe `PaymentProcessed` -> Trừ kho -> Publish `InventoryReserved`.
+4. **Order Service**: Lắng nghe `InventoryReserved` -> Update order (COMPLETED).
+
+### 5.2 Compensation Flow (Rollback)
+1. **Inventory Service**: Hết hàng -> Publish `InventoryFailed`.
+2. **Payment Service**: Lắng nghe `InventoryFailed` -> Hoàn tiền -> Publish `PaymentRefunded`.
+3. **Order Service**: Lắng nghe `InventoryFailed` -> Update order (CANCELLED).
 
 ---
 
-## 📡 4. Thử nghiệm (Try it out)
+## 📡 6. Thử nghiệm (Try it out)
 
 ### Bước 1: Tạo Order mới (Success path)
 ```bash
@@ -76,6 +93,6 @@ curl -X POST http://localhost:3003/inventory/check -d "{\"orderId\":ORDER_ID,\"p
 
 ---
 
-## 📚 5. Tham khảo (References)
+## 📚 7. Tham khảo (References)
 - [Saga Pattern Microservices](https://microservices.io/patterns/data/saga.html)
 - [NestJS Kafka Microservices](https://docs.nestjs.com/microservices/kafka)

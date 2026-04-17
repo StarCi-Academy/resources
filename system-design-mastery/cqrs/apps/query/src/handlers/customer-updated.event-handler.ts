@@ -2,23 +2,40 @@ import { EventsHandler, IEventHandler } from '@nestjs/cqrs';
 import { CustomerProfileUpdatedEvent } from '../events/customer-profile-updated.event';
 import { ElasticsearchService } from '@nestjs/elasticsearch';
 
+/**
+ * Handler xử lý sự kiện đồng bộ dữ liệu sang Elasticsearch
+ * (EN: Handler to sync data to Elasticsearch)
+ */
 @EventsHandler(CustomerProfileUpdatedEvent)
 export class CustomerUpdatedEventHandler implements IEventHandler<CustomerProfileUpdatedEvent> {
-  constructor(private readonly esService: ElasticsearchService) { }
+  constructor(
+    // Inject Elasticsearch service (EN: Inject Elasticsearch service)
+    private readonly esService: ElasticsearchService
+  ) { }
 
+  /**
+   * Xử lý sự kiện (EN: Handle event)
+   *
+   * @param event - Dữ liệu sự kiện (EN: event data)
+   */
   async handle(event: CustomerProfileUpdatedEvent) {
-    console.log(`[Event Handler] Syncing Elasticsearch for Customer ${event.id}`);
+    const { id, name, email } = event;
+    console.log(`[Event Handler] Syncing Elasticsearch for Customer ${id}`);
+
     try {
+      // Execute: Cập nhật Read Model trong Elasticsearch (EN: update Read Model in Elasticsearch)
       await this.esService.index({
         index: 'customers',
-        id: event.id,
+        id: id,
         document: {
-          name: event.name,
-          email: event.email,
+          name: name,
+          email: email,
         },
       });
+      console.log(`[Event Handler] Sync success for ${id}`);
     } catch (e) {
-      console.error(`[Event Handler] Failed to sync ${event.id}:`, e);
+      // Log lỗi chi tiết (EN: log detailed error)
+      console.error(`[Event Handler] Failed to sync ${id}:`, e);
     }
   }
 }
