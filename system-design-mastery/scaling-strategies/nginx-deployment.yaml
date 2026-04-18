@@ -1,0 +1,47 @@
+# Deployment Nginx — dùng để demo scale NGANG (replicas) và scale DỌC (resources patch)
+# (EN: Nginx Deployment — used to demo HORIZONTAL scaling (replicas) and VERTICAL scaling (resources patch))
+#
+# Scale ngang: tăng/giảm replicas — nhiều Pod phục vụ cùng một Service
+# (EN: Horizontal scaling: increase/decrease replicas — multiple Pods serve the same Service)
+#
+# Scale dọc: patch CPU/memory trên container — Pod mới được rollout với tài nguyên lớn hơn
+# (EN: Vertical scaling: patch CPU/memory on container — new Pods roll out with larger resources)
+
+# Khai báo API version cho Deployment (EN: declare API version for Deployment resource)
+apiVersion: apps/v1
+# Deployment quản lý ReplicaSet và Pod — phù hợp production (EN: Deployment manages ReplicaSet and Pods — production-friendly)
+kind: Deployment
+metadata:
+  # Tên Deployment — dùng trong lệnh scale/patch (EN: Deployment name — used in scale/patch commands)
+  name: nginx-scaling-demo
+  labels:
+    app: nginx-scaling-demo
+spec:
+  # Ban đầu 2 replica để thấy load phân tán trước khi scale ngang (EN: start with 2 replicas to observe load distribution before horizontal scale)
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx-scaling-demo
+  template:
+    metadata:
+      labels:
+        app: nginx-scaling-demo
+    spec:
+      containers:
+        - name: nginx
+          image: docker.io/nginx:1.27-alpine
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          # Tài nguyên ban đầu nhỏ — sẽ patch tăng để demo scale dọc (EN: small initial resources — will patch up for vertical demo)
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+
+# Run command:
+# kubectl apply -f nginx-deployment.yaml
