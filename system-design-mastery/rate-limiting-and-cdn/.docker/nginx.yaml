@@ -1,0 +1,16 @@
+# Nginx edge cache giả lập CDN
+# (EN: Nginx edge cache simulating CDN)
+#
+# Run command:
+# docker compose -f .docker/nginx.yaml up --build -d
+
+services:
+  cdn-edge:
+    image: docker.io/nginx:1.27-alpine
+    container_name: rate-limit-cdn-edge
+    ports:
+      - '8080:80'
+    volumes:
+      - ./nginx-cdn.conf:/etc/nginx/nginx.conf:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

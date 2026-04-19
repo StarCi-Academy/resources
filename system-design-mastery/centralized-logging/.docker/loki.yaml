@@ -1,0 +1,31 @@
+# Loki + Grafana để query centralized logs
+# (EN: Loki + Grafana stack for querying centralized logs)
+#
+# Run command:
+# docker compose -f .docker/loki.yaml up --build -d
+
+services:
+  loki:
+    image: docker.io/grafana/loki:3.2.0
+    container_name: centralized-logs-loki
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+
+  grafana:
+    image: docker.io/grafana/grafana:11.3.0
+    container_name: centralized-logs-grafana
+    ports:
+      - '3001:3000'
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+    depends_on:
+      - loki
+
+volumes:
+  loki-data:

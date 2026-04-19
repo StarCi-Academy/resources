@@ -1,0 +1,12 @@
+# Redis cho health check + fallback cache
+# (EN: Redis for health check + fallback cache)
+#
+# Run command:
+# docker compose -f .docker/redis.yaml up --build -d
+
+services:
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: health-check-redis
+    ports:
+      - '6379:6379'

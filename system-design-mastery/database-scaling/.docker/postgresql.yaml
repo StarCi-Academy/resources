@@ -1,0 +1,44 @@
+# Postgres 1 primary + 1 streaming replica dùng Bitnami image
+# (EN: Postgres 1 primary + 1 streaming replica using Bitnami image)
+#
+# Run command:
+# docker compose -f .docker/postgresql.yaml up --build -d
+
+services:
+  postgres-primary:
+    image: docker.io/bitnami/postgresql:16
+    container_name: db-scaling-primary
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRESQL_POSTGRES_PASSWORD: adminpass
+      POSTGRESQL_USERNAME: app
+      POSTGRESQL_PASSWORD: app123
+      POSTGRESQL_DATABASE: appdb
+      POSTGRESQL_REPLICATION_MODE: master
+      POSTGRESQL_REPLICATION_USER: replicator
+      POSTGRESQL_REPLICATION_PASSWORD: replicapass
+    volumes:
+      - primary-data:/bitnami/postgresql
+
+  postgres-replica:
+    image: docker.io/bitnami/postgresql:16
+    container_name: db-scaling-replica
+    ports:
+      - '5433:5432'
+    depends_on:
+      - postgres-primary
+    environment:
+      POSTGRESQL_MASTER_HOST: postgres-primary
+      POSTGRESQL_MASTER_PORT_NUMBER: 5432
+      POSTGRESQL_USERNAME: app
+      POSTGRESQL_PASSWORD: app123
+      POSTGRESQL_REPLICATION_MODE: slave
+      POSTGRESQL_REPLICATION_USER: replicator
+      POSTGRESQL_REPLICATION_PASSWORD: replicapass
+    volumes:
+      - replica-data:/bitnami/postgresql
+
+volumes:
+  primary-data:
+  replica-data:

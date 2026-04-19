@@ -1,0 +1,15 @@
+# Jaeger all-in-one — nhận OTLP HTTP port 4318, UI trên 16686
+# (EN: Jaeger all-in-one — accepts OTLP HTTP on 4318, UI on 16686)
+#
+# Run command:
+# docker compose -f .docker/jaeger.yaml up --build -d
+
+services:
+  jaeger:
+    image: docker.io/jaegertracing/all-in-one:1.62
+    container_name: dist-tracing-jaeger
+    environment:
+      COLLECTOR_OTLP_ENABLED: 'true'
+    ports:
+      - '16686:16686'  # Jaeger UI
+      - '4318:4318'    # OTLP HTTP receiver

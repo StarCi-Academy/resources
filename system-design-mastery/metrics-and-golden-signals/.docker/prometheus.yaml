@@ -1,0 +1,31 @@
+# Prometheus + Grafana stack
+# (EN: Prometheus + Grafana stack)
+#
+# Run command:
+# docker compose -f .docker/prometheus.yaml up --build -d
+
+services:
+  prometheus:
+    image: docker.io/prom/prometheus:v2.55.0
+    container_name: golden-prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  grafana:
+    image: docker.io/grafana/grafana:11.3.0
+    container_name: golden-grafana
+    ports:
+      - '3001:3000'
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: 'true'
+      GF_AUTH_ANONYMOUS_ORG_ROLE: 'Admin'
+    volumes:
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  grafana-data:

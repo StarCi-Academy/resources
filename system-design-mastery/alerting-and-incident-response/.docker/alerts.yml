@@ -1,0 +1,32 @@
+# Alert rules — viết theo triết lý SRE: chỉ alert khi user bị đau
+# (EN: Alert rules per SRE — only fire when users are impacted)
+groups:
+  - name: critical
+    rules:
+      # [P1] Error rate vượt 5% trong 2 phút → P1, gọi điện thoại
+      # (EN: P1 — error rate > 5% for 2m → phone call)
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[2m]))
+          /
+          sum(rate(http_requests_total[2m])) > 0.05
+        for: 2m
+        labels:
+          severity: p1
+        annotations:
+          summary: 'Error rate > 5% trong 2 phút (EN: for 2 minutes)'
+          description: 'Hiện tại: {{ $value | humanizePercentage }}'
+
+      # [P2] p99 latency > 1s trong 5 phút → P2, chỉ post Slack
+      # (EN: P2 — p99 latency > 1s for 5m → Slack only)
+      - alert: HighLatencyP99
+        expr: |
+          histogram_quantile(0.99,
+            sum(rate(http_request_duration_ms_bucket[5m])) by (le)
+          ) > 1000
+        for: 5m
+        labels:
+          severity: p2
+        annotations:
+          summary: 'p99 latency > 1s'
+          description: 'p99 hiện tại: {{ $value }}ms'

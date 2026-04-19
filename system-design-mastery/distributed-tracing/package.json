@@ -1,0 +1,35 @@
+{
+  "name": "6-3-distributed-tracing",
+  "version": "0.0.1",
+  "description": "Module 6.3: Distributed Tracing with OpenTelemetry + Jaeger",
+  "private": true,
+  "scripts": {
+    "start:gateway": "nest start api-gateway --watch",
+    "start:order": "nest start order-service --watch",
+    "start:payment": "nest start payment-service --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.54.0",
+    "@opentelemetry/resources": "^1.28.0",
+    "@opentelemetry/sdk-node": "^0.54.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "axios": "^1.7.7",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  }
+}

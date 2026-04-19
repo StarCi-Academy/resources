@@ -1,0 +1,10 @@
+# Prometheus config — scrape Nest app trên host mỗi 5s
+# (EN: Prometheus config — scrape the Nest app on host every 5s)
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: 'nest-app'
+    static_configs:
+      - targets: ['host.docker.internal:3000']

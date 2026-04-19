@@ -1,0 +1,27 @@
+# Prometheus + Alertmanager stack
+# (EN: Prometheus + Alertmanager stack)
+#
+# Run command:
+# docker compose -f .docker/stack.yaml up --build -d
+
+services:
+  prometheus:
+    image: docker.io/prom/prometheus:v2.55.0
+    container_name: alerting-prometheus
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./alerts.yml:/etc/prometheus/alerts.yml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+
+  alertmanager:
+    image: docker.io/prom/alertmanager:v0.27.0
+    container_name: alerting-alertmanager
+    ports:
+      - '9093:9093'
+    volumes:
+      - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'

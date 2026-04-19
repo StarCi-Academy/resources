@@ -1,0 +1,12 @@
+# Redis cache cho demo Cache-Aside
+# (EN: Redis cache for the Cache-Aside demo)
+#
+# Run command:
+# docker compose -f .docker/redis.yaml up --build -d
+
+services:
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: caching-basics-redis
+    ports:
+      - '6379:6379'

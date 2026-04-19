@@ -1,0 +1,28 @@
+# Alertmanager — route theo severity, gửi webhook tới Nest app
+# (EN: Alertmanager — route by severity, send webhook to Nest app)
+route:
+  receiver: default
+  group_by: ['alertname', 'severity']
+  group_wait: 10s
+  group_interval: 30s
+  repeat_interval: 1h
+  routes:
+    # P1 đi pager (demo dùng chung webhook cho gọn)
+    # (EN: P1 would go to pager in real life; here both go to the same webhook)
+    - matchers:
+        - severity = "p1"
+      receiver: nest-webhook
+    - matchers:
+        - severity = "p2"
+      receiver: nest-webhook
+
+receivers:
+  - name: default
+    webhook_configs:
+      - url: 'http://host.docker.internal:3000/alerts'
+        send_resolved: true
+
+  - name: nest-webhook
+    webhook_configs:
+      - url: 'http://host.docker.internal:3000/alerts'
+        send_resolved: true

@@ -1,0 +1,14 @@
+/dist
+/node_modules
+/build
+*.log
+.DS_Store
+/coverage
+/.idea
+.vscode/*
+!.vscode/settings.json
+.env
+.env.local
+.temp
+.tmp
+*.sqlite
