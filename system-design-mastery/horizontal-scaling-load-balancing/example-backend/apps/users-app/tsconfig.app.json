@@ -1,0 +1,5 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": { "outDir": "../../dist/apps/users-app" },
+  "include": ["src/**/*", "../../libs/**/*"]
+}

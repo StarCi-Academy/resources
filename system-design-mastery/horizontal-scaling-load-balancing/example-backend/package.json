@@ -1,0 +1,29 @@
+{
+  "name": "hsl-example-backend",
+  "version": "0.0.1",
+  "description": "Monorepo 3 NestJS stateless — users/orders/products — demo L7 path routing",
+  "private": true,
+  "scripts": {
+    "build": "nest build users-app && nest build orders-app && nest build products-app",
+    "start:users": "PORT=3001 nest start users-app --watch",
+    "start:orders": "PORT=3002 nest start orders-app --watch",
+    "start:products": "PORT=3003 nest start products-app --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/platform-express": "^11.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.7",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.7.3"
+  }
+}

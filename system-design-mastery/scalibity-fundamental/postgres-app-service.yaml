@@ -6,8 +6,8 @@ metadata:
   # Tên Service (EN: Service name)
   name: postgres-app-service
 spec:
-  # NodePort để test demo từ máy host (EN: NodePort to test the demo from host)
-  type: NodePort
+  # ClusterIP để test demo từ máy host (EN: ClusterIP to test the demo from host)
+  type: ClusterIP
   selector:
     # Selector khớp label của Pod trong Deployment (EN: selector matches Pod labels in the Deployment)
     app: postgres-app
@@ -16,8 +16,6 @@ spec:
       port: 3000
       # Cổng container đích (EN: target container port)
       targetPort: 3000
-      # NodePort cố định để người xem gọi http://<NODE_IP>:30001 (EN: fixed NodePort for demo)
-      nodePort: 30001
 
 # Run command:
 # kubectl apply -f postgres-app-service.yaml

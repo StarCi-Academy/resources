@@ -179,6 +179,31 @@ kubectl get deployments
 
 Thay `<NODE_IP>` bằng IP node thực tế hoặc `localhost` nếu dùng Minikube/Docker Desktop.
 
+### 5.0 Chạy nhanh bằng script / Quick run via script
+
+Có 2 script tự động hoá 4 kịch bản bên dưới (`bash` cho Linux/macOS/WSL, PowerShell cho Windows):
+
+```bash
+# Linux / macOS / WSL
+bash demo.sh apply        # triển khai (EN: deploy)
+bash demo.sh stateless    # kịch bản postgres-app (EN: postgres-app scenario)
+bash demo.sh stateful     # kịch bản sqlite-app  (EN: sqlite-app scenario)
+bash demo.sh all          # chạy tuần tự cả 3 bước
+bash demo.sh clean        # dọn dẹp
+```
+
+```powershell
+# Windows PowerShell
+.\demo.ps1 apply
+.\demo.ps1 stateless
+.\demo.ps1 stateful
+.\demo.ps1 all
+.\demo.ps1 clean
+```
+
+Script dùng `HOST=localhost` mặc định — set env `HOST=<NODE_IP>` nếu chạy xa cluster.
+Phần bên dưới là kịch bản chạy tay, giải thích từng bước.
+
 ### 5.1 Stateless thắng lớn — scale `postgres-app` lên 5 replica
 
 ```bash

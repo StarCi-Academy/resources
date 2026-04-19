@@ -1,0 +1,87 @@
+# NGINX Ingress Controller values cho DigitalOcean Kubernetes (DOKS)
+# (EN: NGINX Ingress Controller values for DigitalOcean Kubernetes (DOKS))
+#
+# Chart: oci://registry-1.docker.io/bitnamicharts/nginx-ingress-controller
+#
+# Điểm mấu chốt: service.type=LoadBalancer → DOKS sẽ tự provision một
+# DigitalOcean Load Balancer thật, và mọi annotation do-loadbalancer-*
+# bên dưới được DO Cloud Controller Manager dịch ra cấu hình LB.
+# (EN: Key: service.type=LoadBalancer makes DOKS provision a real DO LB.
+#  The do-loadbalancer-* annotations are translated by the DO CCM.)
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/nginx-ingress-controller
+  pullPolicy: IfNotPresent
+
+# HA ngay ở tầng Ingress Controller — 2 replica tối thiểu, chạy trên 2 node
+# (EN: HA at the Ingress Controller layer — at least 2 replicas across 2 nodes)
+replicaCount: 2
+
+# Phân bổ pod controller trên nhiều node để node chết không mất cả tầng L7
+# (EN: Spread controller pods across nodes so a node outage doesn't kill L7)
+topologySpreadConstraints:
+  - maxSkew: 1
+    topologyKey: kubernetes.io/hostname
+    whenUnsatisfiable: ScheduleAnyway
+    labelSelector:
+      matchLabels:
+        app.kubernetes.io/name: nginx-ingress-controller
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "128Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+# (Tuỳ chọn) Pin vào node pool riêng để LB traffic không chen ứng dụng
+# (EN: Optional — pin to a dedicated ingress node pool so LB traffic doesn't mix with apps)
+# nodeSelector:
+#   "doks.digitalocean.com/node-pool": "ingress-pool"
+
+service:
+  # type=LoadBalancer → DOKS provision một DO LB và trỏ external IP vào đây
+  # (EN: type=LoadBalancer → DOKS provisions a DO LB pointing at this Service)
+  type: LoadBalancer
+  annotations:
+    # Số LB "unit" — quyết định throughput (xem bảng giá trong README)
+    # (EN: number of LB "units" — drives throughput; see README pricing table)
+    service.beta.kubernetes.io/do-loadbalancer-size-unit: "1"
+
+    # Loại LB: REGIONAL (classic L4/L7) hoặc REGIONAL_NETWORK (network LB L4, băng thông cao)
+    # (EN: LB type: REGIONAL (classic) or REGIONAL_NETWORK (high-bandwidth L4 NLB))
+    service.beta.kubernetes.io/do-loadbalancer-type: "REGIONAL_NETWORK"
+
+    # Giữ IP client thật trong header X-Forwarded-For (EN: preserve client IP)
+    service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"
+
+    # HTTP/2 phía client — giảm latency, nhiều request cùng connection
+    # (EN: client-side HTTP/2 for lower latency and connection multiplexing)
+    service.beta.kubernetes.io/do-loadbalancer-enable-backend-keepalive: "true"
+
+    # Sticky session qua cookie — CHỈ bật nếu app bắt buộc; thường KHÔNG nên
+    # vì nó giết cân bằng tải và chống lại triết lý stateless.
+    # (EN: Sticky session via cookie — only if the app truly needs it; generally
+    #  avoid because it breaks load distribution and contradicts stateless design.)
+    # service.beta.kubernetes.io/do-loadbalancer-sticky-sessions-type: "cookies"
+    # service.beta.kubernetes.io/do-loadbalancer-sticky-sessions-cookie-name: "hsl_session"
+    # service.beta.kubernetes.io/do-loadbalancer-sticky-sessions-cookie-ttl: "300"
+
+defaultBackend:
+  enabled: true
+  replicaCount: 1
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/nginx
+    pullPolicy: IfNotPresent
+  resources:
+    requests: { cpu: "50m", memory: "64Mi" }
+    limits:   { cpu: "100m", memory: "128Mi" }
+
+ingressClassResource:
+  name: nginx
+  enabled: true
+  default: true
+  controllerClass: "k8s.io/ingress-nginx"

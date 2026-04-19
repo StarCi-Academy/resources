@@ -1,0 +1,44 @@
+# Build + chạy cả 3 backend ở 3 cổng khác nhau
+# (EN: build + run all 3 backends on 3 different ports)
+#
+# Run command (chạy tại thư mục example-backend/):
+# docker compose -f docker-compose.yaml up --build -d
+#
+# Sau khi chạy:
+#   curl http://localhost:3001/api/users     → dataset users
+#   curl http://localhost:3002/api/orders    → dataset orders
+#   curl http://localhost:3003/api/products  → dataset products
+
+services:
+  users-app:
+    build:
+      context: .
+      dockerfile: apps/users-app/Dockerfile
+    image: starci183/hsl-users-app:latest
+    container_name: hsl-users-app
+    environment:
+      PORT: '3001'
+    ports:
+      - '3001:3001'
+
+  orders-app:
+    build:
+      context: .
+      dockerfile: apps/orders-app/Dockerfile
+    image: starci183/hsl-orders-app:latest
+    container_name: hsl-orders-app
+    environment:
+      PORT: '3002'
+    ports:
+      - '3002:3002'
+
+  products-app:
+    build:
+      context: .
+      dockerfile: apps/products-app/Dockerfile
+    image: starci183/hsl-products-app:latest
+    container_name: hsl-products-app
+    environment:
+      PORT: '3003'
+    ports:
+      - '3003:3003'

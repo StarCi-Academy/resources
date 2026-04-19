@@ -1,0 +1,64 @@
+# Ingress — L7 path-based routing tới 3 service khác nhau
+# (EN: L7 path-based routing to 3 different services)
+#
+# Traffic flow:
+#   Internet
+#     → DigitalOcean Load Balancer (L4, REGIONAL_NETWORK, 1 public IP)
+#       → Nginx Ingress Controller (L7, 2+ replica)
+#         → /api/users    → Service users-service    → 1 trong 3 pod users-app
+#         → /api/orders   → Service orders-service   → 1 trong 3 pod orders-app
+#         → /api/products → Service products-service → 1 trong 3 pod products-app
+#
+# Đây là thế mạnh lớn nhất của Ingress L7: MỘT public IP duy nhất chạy nhiều
+# backend khác nhau, chọn theo URL path. DO LB bên ngoài không cần biết gì.
+# (EN: Core strength of L7 Ingress — a single public IP serves many backends,
+#  routing by URL path. The DO LB below it doesn't need to know.)
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hsl-backend-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # Thuật toán upstream — round_robin mặc định (EN: default upstream algo)
+    nginx.ingress.kubernetes.io/load-balance: "round_robin"
+    # Timeout backend (giây) (EN: backend timeouts, seconds)
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "30"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "30"
+spec:
+  ingressClassName: nginx
+  rules:
+    # Thay `hsl.example.com` bằng domain thật (EN: replace with your real domain)
+    - host: hsl.example.com
+      http:
+        paths:
+          # /api/users/*   → users-service:3001
+          # (EN: route /api/users/* to users-service)
+          - path: /api/users
+            pathType: Prefix
+            backend:
+              service:
+                name: users-service
+                port:
+                  number: 3001
+          # /api/orders/*  → orders-service:3002
+          # (EN: route /api/orders/* to orders-service)
+          - path: /api/orders
+            pathType: Prefix
+            backend:
+              service:
+                name: orders-service
+                port:
+                  number: 3002
+          # /api/products/* → products-service:3003
+          # (EN: route /api/products/* to products-service)
+          - path: /api/products
+            pathType: Prefix
+            backend:
+              service:
+                name: products-service
+                port:
+                  number: 3003
+
+# Run command:
+# kubectl apply -f backend-ingress.yaml

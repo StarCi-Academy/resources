@@ -1,0 +1,62 @@
+# Deployment products-app — 3 replica stateless
+# (EN: products-app Deployment — 3 stateless replicas)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: products-app
+  labels:
+    app: products-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: products-app
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: products-app
+    spec:
+      containers:
+        - name: products-app
+          image: starci183/hsl-products-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3003
+          env:
+            - name: PORT
+              value: "3003"
+          readinessProbe:
+            httpGet:
+              path: /api/products/healthz
+              port: 3003
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          livenessProbe:
+            httpGet:
+              path: /api/products/healthz
+              port: 3003
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests: { cpu: "50m", memory: "64Mi" }
+            limits:   { cpu: "500m", memory: "256Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: products-service
+spec:
+  type: ClusterIP
+  selector:
+    app: products-app
+  ports:
+    - port: 3003
+      targetPort: 3003
+
+# Run command:
+# kubectl apply -f products-app-deployment.yaml
