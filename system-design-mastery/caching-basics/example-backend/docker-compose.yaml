@@ -1,0 +1,43 @@
+# Build + chạy cache-app + Postgres + Redis để dev isolate
+# (EN: build + run cache-app + Postgres + Redis in isolation for dev)
+#
+# Run command:
+# docker compose -f docker-compose.yaml up --build -d
+
+services:
+  postgres:
+    image: docker.io/postgres:16-alpine
+    container_name: caching-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: products
+    ports:
+      - '5432:5432'
+
+  redis:
+    image: docker.io/redis:7-alpine
+    container_name: caching-redis
+    ports:
+      - '6379:6379'
+
+  cache-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: starci183/caching-cache-app:latest
+    container_name: caching-cache-app
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      PORT: '3000'
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DATABASE: products
+      REDIS_HOST: redis
+      REDIS_PORT: '6379'
+    ports:
+      - '3000:3000'
