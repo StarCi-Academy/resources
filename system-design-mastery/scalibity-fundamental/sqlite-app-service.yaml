@@ -5,15 +5,13 @@ kind: Service
 metadata:
   name: sqlite-app-service
 spec:
-  # NodePort để test từ máy host (EN: NodePort for host access)
-  type: NodePort
+  # ClusterIP để test demo từ máy host (EN: ClusterIP to test the demo from host)
+  type: ClusterIP
   selector:
     app: sqlite-app
   ports:
     - port: 3000
       targetPort: 3000
-      # NodePort cho sqlite-app (EN: NodePort for sqlite-app)
-      nodePort: 30002
 
 # Run command:
 # kubectl apply -f sqlite-app-service.yaml
