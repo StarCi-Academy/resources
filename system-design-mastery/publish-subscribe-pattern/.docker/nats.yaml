@@ -1,0 +1,30 @@
+# Docker Compose cho NATS (Pub/Sub broker)
+# (EN: Docker Compose for NATS pub/sub broker)
+#
+# NATS core pub/sub là broadcast pattern — mọi subscriber cùng subject đều nhận message
+# (EN: NATS core pub/sub is broadcast — every subscriber on the subject receives the message)
+#
+# Không dùng JetStream ở demo này để giữ đúng semantic fire-and-forget như Redis Pub/Sub
+# (EN: JetStream is disabled here to keep the same fire-and-forget semantic as Redis Pub/Sub)
+
+services:
+  nats:
+    image: docker.io/nats:2.10-alpine
+    container_name: nats-pubsub
+    command:
+      # -m bật HTTP monitoring trên port 8222
+      # (EN: -m enables HTTP monitoring on port 8222)
+      - "-m"
+      - "8222"
+    ports:
+      # Port client NATS (EN: NATS client port)
+      - "4222:4222"
+      # Port monitoring HTTP (EN: HTTP monitoring port)
+      - "8222:8222"
+    restart: unless-stopped
+
+# Run command:
+# docker compose -f .docker/nats.yaml up -d
+#
+# Health check (EN: check status):
+#   curl http://localhost:8222/varz

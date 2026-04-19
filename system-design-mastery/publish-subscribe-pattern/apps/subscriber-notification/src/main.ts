@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
  */
 async function bootstrap() {
   const app = await NestFactory.createApplicationContext(AppModule);
-  console.log('Notification Subscriber đang lắng nghe Redis (EN: listening to Redis)');
+  console.log('Notification Subscriber đang lắng nghe NATS (EN: listening to NATS)');
 
   process.on('SIGINT', async () => {
     await app.close();

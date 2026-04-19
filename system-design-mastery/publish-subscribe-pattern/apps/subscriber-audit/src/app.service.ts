@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import Redis from 'ioredis';
+import { connect, NatsConnection, StringCodec, Codec, Subscription } from 'nats';
 
 /**
  * Audit Subscriber — ghi audit log cho mọi event
@@ -11,31 +11,37 @@ import Redis from 'ioredis';
 @Injectable()
 export class AppService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('SubscriberAudit');
-  private subscriber: Redis;
+  private nc: NatsConnection;
+  private sub: Subscription;
+  private sc: Codec<string> = StringCodec();
 
-  // Audit log lưu trong memory (EN: audit log stored in memory)
   private auditLog: any[] = [];
 
-  onModuleInit() {
-    this.subscriber = new Redis({ host: 'localhost', port: 6379 });
+  async onModuleInit() {
+    this.nc = await connect({ servers: 'nats://localhost:4222' });
 
-    void this.subscriber.subscribe('app-events');
+    this.sub = this.nc.subscribe('app.events');
 
-    this.subscriber.on('message', (channel: string, message: string) => {
-      const data = JSON.parse(message);
+    void this.handleMessages();
 
-      // Tạo audit entry với timestamp và source channel
-      // (EN: Create audit entry with timestamp and source channel)
+    this.logger.log({ message: 'Audit subscriber đã kết nối (EN: connected)' });
+  }
+
+  private async handleMessages() {
+    for await (const msg of this.sub) {
+      const data = JSON.parse(this.sc.decode(msg.data));
+
+      // Tạo audit entry với timestamp và source subject
+      // (EN: Create audit entry with timestamp and source subject)
       const auditEntry = {
         id: this.auditLog.length + 1,
-        channel,
+        subject: msg.subject,
         eventType: data.type,
         payload: data.payload,
         receivedAt: new Date().toISOString(),
         originalTimestamp: data.timestamp,
       };
 
-      // Lưu vào audit log (EN: save to audit log)
       this.auditLog.push(auditEntry);
 
       this.logger.log({
@@ -44,12 +50,10 @@ export class AppService implements OnModuleInit, OnModuleDestroy {
         eventType: data.type,
         totalAuditEntries: this.auditLog.length,
       });
-    });
-
-    this.logger.log({ message: 'Audit subscriber đã kết nối (EN: connected)' });
+    }
   }
 
   async onModuleDestroy() {
-    await this.subscriber.quit();
+    await this.nc?.drain();
   }
 }

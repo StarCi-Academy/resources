@@ -6,8 +6,8 @@ import { AppService } from './app.service';
  * Root module cho Publisher Service
  * (EN: Root module for Publisher Service)
  *
- * HTTP server + Redis publisher
- * (EN: HTTP server + Redis publisher)
+ * HTTP server + NATS publisher
+ * (EN: HTTP server + NATS publisher)
  */
 @Module({
   controllers: [AppController],

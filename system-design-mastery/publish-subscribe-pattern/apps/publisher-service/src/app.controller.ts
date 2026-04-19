@@ -5,24 +5,23 @@ import { AppService } from './app.service';
  * Controller REST API cho Publisher Service
  * (EN: REST API Controller for Publisher Service)
  *
- * Nhận request từ client → publish message lên Redis Pub/Sub
- * (EN: Receives client request → publishes message to Redis Pub/Sub)
+ * Nhận request từ client → publish message lên NATS subject
+ * (EN: Receives client request → publishes message to NATS subject)
  */
 @Controller('events')
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
   /**
-   * POST /events — Publish event lên Redis channel "app-events"
-   * (EN: POST /events — Publish event to Redis channel "app-events")
-   *
-   * @param dto - Dữ liệu event (EN: event data)
-   * @returns Kết quả publish (EN: publish result)
+   * POST /events — Publish event lên NATS subject "app.events"
+   * (EN: POST /events — Publish event to NATS subject "app.events")
    */
   @Post()
-  async publishEvent(@Body() dto: { type: string; payload: any }) {
-    // Publish lên channel "app-events" (EN: publish to channel "app-events")
-    const subscriberCount = await this.appService.publish('app-events', {
+  publishEvent(@Body() dto: { type: string; payload: any }) {
+    // NATS dùng dấu chấm làm token separator (EN: NATS uses dot as token separator)
+    const subject = 'app.events';
+
+    this.appService.publish(subject, {
       type: dto.type,
       payload: dto.payload,
       timestamp: new Date().toISOString(),
@@ -30,8 +29,7 @@ export class AppController {
 
     return {
       status: 'published',
-      channel: 'app-events',
-      subscriberCount,
+      subject,
       event: dto,
     };
   }

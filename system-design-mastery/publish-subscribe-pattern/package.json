@@ -1,7 +1,7 @@
 {
   "name": "3-publish-subscribe-pattern",
   "version": "0.0.1",
-  "description": "Module 3: Publish-Subscribe Pattern with Redis Pub/Sub",
+  "description": "Module 3: Publish-Subscribe Pattern with NATS",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -22,7 +22,7 @@
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.1.18",
     "@nestjs/platform-express": "^11.0.1",
-    "ioredis": "^5.4.2",
+    "nats": "^2.28.2",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },

@@ -5,8 +5,8 @@ import { AppModule } from './app.module';
  * Bootstrap Publisher Service trên port 3001
  * (EN: Bootstrap Publisher Service on port 3001)
  *
- * REST API nhận request, publish message lên Redis Pub/Sub
- * (EN: REST API receives request, publishes message to Redis Pub/Sub)
+ * REST API nhận request, publish message lên NATS
+ * (EN: REST API receives request, publishes message to NATS)
  */
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

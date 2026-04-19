@@ -1,27 +1,27 @@
 # Publish-Subscribe Pattern
 
-Demo Pub/Sub pattern sử dụng Redis Pub/Sub. 1 publisher broadcast message đến nhiều subscribers.
-(EN: Demo Pub/Sub pattern using Redis Pub/Sub. 1 publisher broadcasts messages to multiple subscribers.)
+Demo Pub/Sub pattern sử dụng NATS. 1 publisher broadcast message đến nhiều subscribers.
+(EN: Demo Pub/Sub pattern using NATS. 1 publisher broadcasts messages to multiple subscribers.)
 
 ---
 
 ## Mục tiêu / Objective
 
 ### Tiếng Việt
-- Xây dựng publisher service publish events lên Redis channel.
-- 3 subscribers subscribe cùng channel, mỗi subscriber xử lý khác nhau:
+- Xây dựng publisher service publish events lên NATS subject.
+- 3 subscribers subscribe cùng subject, mỗi subscriber xử lý khác nhau:
   - **Analytics**: Đếm và ghi nhận thống kê events.
   - **Notification**: Gửi thông báo (mô phỏng email/SMS).
   - **Audit**: Ghi audit log cho tất cả events.
-- So sánh Pub/Sub (broadcast) vs Consumer Groups (load balancing) trong Asynchronous Event-Driven.
+- So sánh NATS core pub/sub (broadcast) vs Kafka Consumer Groups (load balancing).
 
 ### English
-- Build a publisher service that publishes events to a Redis channel.
-- 3 subscribers subscribe to the same channel, each processing differently:
+- Build a publisher service that publishes events to a NATS subject.
+- 3 subscribers subscribe to the same subject, each processing differently:
   - **Analytics**: Counts and records event statistics.
   - **Notification**: Sends notifications (simulates email/SMS).
   - **Audit**: Records audit log for all events.
-- Compare Pub/Sub (broadcast) vs Consumer Groups (load balancing) from Asynchronous Event-Driven module.
+- Compare NATS core pub/sub (broadcast) vs Kafka Consumer Groups (load balancing).
 
 ---
 
@@ -30,28 +30,28 @@ Demo Pub/Sub pattern sử dụng Redis Pub/Sub. 1 publisher broadcast message đ
 ```
 publish-subscribe-pattern/
 ├── .docker/
-│   └── redis.yaml                     # Redis server
+│   └── nats.yaml                      # NATS server + monitoring :8222
 ├── apps/
-│   ├── publisher-service/src/         # :3001 — REST API + Redis publisher
+│   ├── publisher-service/src/         # :3001 — REST API + NATS publisher
 │   │   ├── main.ts                    # HTTP server
 │   │   ├── app.module.ts
 │   │   ├── app.controller.ts          # POST /events
-│   │   ├── app.service.ts             # Redis publish logic
+│   │   ├── app.service.ts             # NATS publish logic
 │   │   └── index.ts
 │   ├── subscriber-analytics/src/      # Subscriber — thu thập analytics
 │   │   ├── main.ts                    # Application context (không có HTTP)
 │   │   ├── app.module.ts
-│   │   ├── app.service.ts             # Redis subscribe + đếm events
+│   │   ├── app.service.ts             # NATS subscribe + đếm events
 │   │   └── index.ts
 │   ├── subscriber-notification/src/   # Subscriber — gửi thông báo
 │   │   ├── main.ts
 │   │   ├── app.module.ts
-│   │   ├── app.service.ts             # Redis subscribe + notification
+│   │   ├── app.service.ts             # NATS subscribe + notification
 │   │   └── index.ts
 │   └── subscriber-audit/src/          # Subscriber — ghi audit log
 │       ├── main.ts
 │       ├── app.module.ts
-│       ├── app.service.ts             # Redis subscribe + audit log
+│       ├── app.service.ts             # NATS subscribe + audit log
 │       └── index.ts
 ├── nest-cli.json
 ├── package.json
@@ -71,9 +71,9 @@ Client (curl)
     ▼ POST /events
 Publisher Service (:3001)
     │
-    └── redis.publish("app-events", message)
+    └── nc.publish("app.events", message)
                     │
-                    ▼ Redis Pub/Sub (Broadcast)
+                    ▼ NATS Core Pub/Sub (Broadcast)
     ┌───────────────┼───────────────┐
     │               │               │
     ▼               ▼               ▼
@@ -86,23 +86,27 @@ Subscriber      Subscriber        Subscriber
 
 ### Điểm mấu chốt (EN: Key Point)
 - **Tất cả 3 subscribers đều nhận CÙNG message** — đây là broadcast pattern.
-- Khác với Asynchronous Event-Driven (Kafka Consumer Groups) nơi mỗi message chỉ 1 consumer xử lý.
+- NATS dùng **subject** (dấu chấm, vd. `app.events`, `order.created`) thay vì channel.
+- Không bật JetStream → fire-and-forget, message không được lưu trữ (giống Redis Pub/Sub).
 
 ### English
 - **All 3 subscribers receive the SAME message** — this is the broadcast pattern.
-- Different from Asynchronous Event-Driven (Kafka Consumer Groups) where each message is processed by only 1 consumer.
+- NATS uses **subjects** (dot-separated, e.g. `app.events`, `order.created`) instead of channels.
+- JetStream disabled → fire-and-forget, messages are not persisted (same as Redis Pub/Sub).
 
 ---
 
-## So sánh Kafka vs Redis Pub/Sub
+## So sánh NATS vs Kafka vs Redis Pub/Sub
 
-| Tiêu chí / Criteria | Kafka (Event-Driven) | Redis Pub/Sub |
-|---------------------|----------------------|---------------|
-| Pattern | Consumer Groups | Publish-Subscribe |
-| Ai nhận message? | 1 consumer/group | TẤT CẢ subscribers |
-| Message persistence | Có — lưu trên disk | Không — fire and forget |
-| Phù hợp cho / Best for | Task distribution, replay | Real-time broadcast, notifications |
-| Khi subscriber offline | Message chờ sẵn | Message mất |
+| Tiêu chí / Criteria | NATS core | Kafka | Redis Pub/Sub |
+|---------------------|-----------|-------|---------------|
+| Pattern | Subject-based pub/sub | Consumer Groups | Channel pub/sub |
+| Ai nhận message? | TẤT CẢ subscribers | 1 consumer/group | TẤT CẢ subscribers |
+| Message persistence | Không (có với JetStream) | Có — lưu trên disk | Không |
+| Throughput | Rất cao (~10M msg/s) | Cao | Cao |
+| Latency | Sub-millisecond | ~ms | Sub-millisecond |
+| Phù hợp cho / Best for | Microservices, IoT, real-time | Task distribution, replay | Real-time broadcast |
+| Khi subscriber offline | Message mất | Message chờ sẵn | Message mất |
 
 ---
 
@@ -114,17 +118,17 @@ npm install
 
 ---
 
-## Bước 2 — Chạy Redis / Step 2 — Run Redis
+## Bước 2 — Chạy NATS / Step 2 — Run NATS
 
 ```bash
-docker compose -f .docker/redis.yaml up --build -d
+docker compose -f .docker/nats.yaml up -d
 ```
 
-### Kiểm tra Redis / Verify Redis
+### Kiểm tra NATS / Verify NATS
 
 ```bash
-docker exec -it redis-pubsub redis-cli ping
-# Output: PONG
+# Truy cập HTTP monitoring (EN: access HTTP monitoring)
+curl http://localhost:8222/varz
 ```
 
 ---
@@ -195,30 +199,51 @@ After each curl, check logs in all 3 subscriber terminals:
 
 ---
 
-## Redis Pub/Sub vs Redis Streams
+## NATS Core Pub/Sub vs NATS JetStream
 
 ### Tiếng Việt
 
-| | Pub/Sub | Streams |
-|---|---------|---------|
+| | Core Pub/Sub | JetStream |
+|---|--------------|-----------|
 | Persistence | Không | Có |
-| Consumer groups | Không | Có |
+| Consumer groups (queue groups) | Có (cùng conn, load balance) | Có |
 | Message replay | Không | Có |
+| At-least-once delivery | Không | Có |
 | Complexity | Đơn giản | Phức tạp hơn |
-| Use case | Real-time broadcast | Event sourcing, task queue |
+| Use case | Real-time broadcast | Event sourcing, work queue |
 
-Project này dùng **Pub/Sub** vì mục tiêu là demo broadcast pattern đơn giản.
+Project này dùng **Core Pub/Sub** vì mục tiêu là demo broadcast pattern đơn giản.
+Nếu muốn mỗi message chỉ 1 subscriber xử lý (load balancing), dùng **queue groups**:
+`nc.subscribe("app.events", { queue: "workers" })`.
 
 ### English
-This project uses **Pub/Sub** because the goal is to demo the simple broadcast pattern.
+This project uses **Core Pub/Sub** because the goal is to demo the simple broadcast pattern.
+For load-balanced delivery (one subscriber per message), use **queue groups**:
+`nc.subscribe("app.events", { queue: "workers" })`.
+
+---
+
+## Wildcard Subjects (NATS-specific)
+
+NATS hỗ trợ wildcard rất mạnh trong subject (EN: NATS supports powerful wildcards in subjects):
+
+- `order.*` — match `order.created`, `order.paid` (1 token)
+- `order.>` — match `order.created`, `order.item.added` (nhiều tokens)
+
+Ví dụ: subscriber có thể lắng nghe tất cả events bắt đầu với `app.`:
+(EN: e.g. a subscriber can listen to all events starting with `app.`:)
+
+```typescript
+nc.subscribe('app.>');
+```
 
 ---
 
 ## Dọn dẹp / Cleanup
 
 ```bash
-# Dừng Redis (EN: stop Redis)
-docker compose -f .docker/redis.yaml down
+# Dừng NATS (EN: stop NATS)
+docker compose -f .docker/nats.yaml down
 
 # Ctrl+C trong các terminal để dừng services
 # (EN: Ctrl+C in each terminal to stop services)
@@ -228,6 +253,7 @@ docker compose -f .docker/redis.yaml down
 
 ## Tài liệu tham khảo / References
 
-- [Redis Pub/Sub Documentation](https://redis.io/docs/manual/pubsub/)
-- [ioredis GitHub](https://github.com/redis/ioredis)
+- [NATS Documentation](https://docs.nats.io/)
+- [nats.js GitHub](https://github.com/nats-io/nats.js)
+- [NATS Subject Design](https://docs.nats.io/nats-concepts/subjects)
 - [Publish-Subscribe Pattern](https://microservices.io/patterns/communication-style/messaging.html)

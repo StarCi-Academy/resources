@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import Redis from 'ioredis';
+import { connect, NatsConnection, StringCodec, Codec, Subscription } from 'nats';
 
 /**
  * Notification Subscriber — gửi thông báo khi nhận event
@@ -8,31 +8,40 @@ import Redis from 'ioredis';
 @Injectable()
 export class AppService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('SubscriberNotification');
-  private subscriber: Redis;
+  private nc: NatsConnection;
+  private sub: Subscription;
+  private sc: Codec<string> = StringCodec();
 
-  onModuleInit() {
-    this.subscriber = new Redis({ host: 'localhost', port: 6379 });
+  async onModuleInit() {
+    this.nc = await connect({ servers: 'nats://localhost:4222' });
 
-    void this.subscriber.subscribe('app-events');
+    // Subscribe subject "app.events" (EN: subscribe to subject "app.events")
+    this.sub = this.nc.subscribe('app.events');
 
-    this.subscriber.on('message', (channel: string, message: string) => {
-      const data = JSON.parse(message);
+    // Async iterate messages — NATS client trả về async iterator
+    // (EN: Async iterate messages — NATS client returns an async iterator)
+    void this.handleMessages();
+
+    this.logger.log({ message: 'Notification subscriber đã kết nối (EN: connected)' });
+  }
+
+  private async handleMessages() {
+    for await (const msg of this.sub) {
+      const data = JSON.parse(this.sc.decode(msg.data));
 
       // Mô phỏng gửi notification (email, SMS, push notification)
       // (EN: Simulate sending notification — email, SMS, push notification)
       this.logger.log({
         message: `[Notification] Gửi thông báo (EN: sending notification)`,
-        channel,
+        subject: msg.subject,
         eventType: data.type,
         notification: `Sự kiện "${data.type}" đã xảy ra lúc ${data.timestamp}`,
         payload: data.payload,
       });
-    });
-
-    this.logger.log({ message: 'Notification subscriber đã kết nối (EN: connected)' });
+    }
   }
 
   async onModuleDestroy() {
-    await this.subscriber.quit();
+    await this.nc?.drain();
   }
 }
