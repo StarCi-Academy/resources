@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "libs",
+  "monorepo": true,
+  "root": "apps/postgres-app",
+  "compilerOptions": { "deleteOutDir": true, "webpack": false, "tsConfigPath": "tsconfig.build.json" },
+  "projects": {
+    "postgres-app": {
+      "type": "application",
+      "root": "apps/postgres-app",
+      "entryFile": "main",
+      "sourceRoot": "apps/postgres-app/src",
+      "compilerOptions": { "tsConfigPath": "apps/postgres-app/tsconfig.app.json" }
+    },
+    "sqlite-app": {
+      "type": "application",
+      "root": "apps/sqlite-app",
+      "entryFile": "main",
+      "sourceRoot": "apps/sqlite-app/src",
+      "compilerOptions": { "tsConfigPath": "apps/sqlite-app/tsconfig.app.json" }
+    }
+  }
+}

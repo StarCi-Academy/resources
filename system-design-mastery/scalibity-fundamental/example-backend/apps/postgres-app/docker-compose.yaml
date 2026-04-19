@@ -1,0 +1,35 @@
+# Build + chạy postgres-app + Postgres để dev isolate
+# (EN: build + run postgres-app + Postgres in isolation for dev)
+#
+# Run command (chạy từ thư mục này):
+# docker compose -f docker-compose.yaml up --build -d
+
+services:
+  postgres:
+    image: docker.io/postgres:16-alpine
+    container_name: scalibity-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notes
+    ports:
+      - '5432:5432'
+
+  postgres-app:
+    build:
+      # Context = monorepo root để Dockerfile copy được libs/ (EN: context = monorepo root to access libs/)
+      context: ../..
+      dockerfile: apps/postgres-app/Dockerfile
+    image: starci183/scalibity-postgres-app:latest
+    container_name: scalibity-postgres-app
+    depends_on:
+      - postgres
+    environment:
+      PORT: '3000'
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: '5432'
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DATABASE: notes
+    ports:
+      - '3000:3000'

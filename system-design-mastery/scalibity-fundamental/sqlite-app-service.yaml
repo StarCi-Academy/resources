@@ -1,0 +1,19 @@
+# Khai báo API version cho Service (EN: declare API version for Service)
+apiVersion: v1
+# Loại tài nguyên là Service — expose sqlite-app ra ngoài cluster (EN: Service — expose sqlite-app outside the cluster)
+kind: Service
+metadata:
+  name: sqlite-app-service
+spec:
+  # NodePort để test từ máy host (EN: NodePort for host access)
+  type: NodePort
+  selector:
+    app: sqlite-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+      # NodePort cho sqlite-app (EN: NodePort for sqlite-app)
+      nodePort: 30002
+
+# Run command:
+# kubectl apply -f sqlite-app-service.yaml

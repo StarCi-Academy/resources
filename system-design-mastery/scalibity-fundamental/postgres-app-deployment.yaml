@@ -1,0 +1,57 @@
+# Khai báo API version cho Deployment (EN: declare API version for Deployment)
+apiVersion: apps/v1
+# Loại tài nguyên là Deployment — stateless app, scale up/down vô tư (EN: Deployment — stateless app, safe to scale up/down)
+kind: Deployment
+metadata:
+  # Tên Deployment (EN: Deployment name)
+  name: postgres-app
+  labels:
+    # Label để nhận diện nhóm resource (EN: label to identify this resource group)
+    app: postgres-app
+spec:
+  # Bắt đầu 1 replica — demo sẽ `kubectl scale --replicas=5` sau (EN: start with 1 — demo scales to 5)
+  replicas: 1
+  selector:
+    matchLabels:
+      # Selector phải khớp label của Pod template (EN: selector must match Pod template labels)
+      app: postgres-app
+  template:
+    metadata:
+      labels:
+        # Label gắn cho mỗi Pod được tạo (EN: label attached to each Pod)
+        app: postgres-app
+    spec:
+      containers:
+        - # Tên container (EN: container name)
+          name: postgres-app
+          # Image isolate cho postgres-app (EN: isolated image for postgres-app)
+          image: starci183/scalibity-postgres-app:latest
+          # Luôn pull image mới nhất (EN: always pull latest)
+          imagePullPolicy: Always
+          ports:
+            - # Cổng HTTP NestJS lắng nghe (EN: HTTP port NestJS listens on)
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - # Host Postgres qua Kubernetes DNS nội bộ (EN: Postgres host via internal K8s DNS)
+              name: POSTGRES_HOST
+              value: "postgres-service.default.svc.cluster.local"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DATABASE
+              value: "notes"
+          # Readiness probe — K8s route traffic vào khi app sẵn sàng (EN: only route traffic when ready)
+          readinessProbe:
+            httpGet:
+              path: /notes/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+# Run command:
+# kubectl apply -f postgres-app-deployment.yaml

@@ -1,0 +1,51 @@
+# Khai báo API version cho Deployment (EN: declare API version for Deployment)
+apiVersion: apps/v1
+# Loại tài nguyên là Deployment — CỐ TÌNH dùng để minh hoạ anti-pattern stateful (EN: Deployment — INTENTIONAL anti-pattern for stateful state)
+kind: Deployment
+metadata:
+  # Tên Deployment (EN: Deployment name)
+  name: sqlite-app
+  labels:
+    app: sqlite-app
+spec:
+  # 1 replica lúc đầu; demo sẽ scale lên 3 để thấy data phân mảnh (EN: start with 1; scale to 3 to see fragmentation)
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sqlite-app
+  template:
+    metadata:
+      labels:
+        app: sqlite-app
+    spec:
+      containers:
+        - # Tên container (EN: container name)
+          name: sqlite-app
+          # Image isolate cho sqlite-app (EN: isolated image for sqlite-app)
+          image: starci183/scalibity-sqlite-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - # Đường dẫn file SQLite — chính file này là nguồn gốc "stateful" (EN: SQLite path — source of "stateful" behavior)
+              name: SQLITE_PATH
+              value: "/data/notes.db"
+          volumeMounts:
+            - # emptyDir ephemeral — mỗi pod có filesystem riêng, mất khi pod bị xoá (EN: emptyDir is ephemeral — per-pod, lost on delete)
+              name: data
+              mountPath: /data
+          readinessProbe:
+            httpGet:
+              path: /notes/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - # emptyDir = ephemeral storage gắn vào pod (EN: emptyDir = ephemeral storage bound to pod lifecycle)
+          name: data
+          emptyDir: {}
+
+# Run command:
+# kubectl apply -f sqlite-app-deployment.yaml
