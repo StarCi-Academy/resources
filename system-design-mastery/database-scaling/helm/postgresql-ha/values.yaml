@@ -1,0 +1,70 @@
+# Cấu hình Helm chart PostgreSQL HA với image từ bitnamilegacy
+# (EN: Helm chart configuration for PostgreSQL HA using bitnamilegacy images)
+# Chart: oci://registry-1.docker.io/bitnamicharts/postgresql-ha
+# File gốc: values.origin.yaml
+
+# Override tất cả image từ bitnami/* sang bitnamilegacy/*
+# (EN: Override all images from bitnami/* to bitnamilegacy/*)
+
+# Image PostgreSQL với Repmgr (EN: PostgreSQL with Repmgr image)
+postgresql:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql-repmgr
+    tag: 17.6.0-debian-12-r2
+    pullPolicy: IfNotPresent
+  # Số lượng replica — 1 primary + N-1 standby (EN: number of replicas)
+  replicaCount: 3
+  # Credentials — thay đổi trong production! (EN: credentials — change in production!)
+  username: postgres
+  password: "postgres123"
+  database: demo_db
+  repmgrUsername: repmgr
+  repmgrPassword: "repmgr123"
+  repmgrDatabase: repmgr
+
+# Image Pgpool — connection pooling và load balancing (EN: Pgpool image)
+pgpool:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/pgpool
+    tag: 4.6.2-debian-12-r1
+    pullPolicy: IfNotPresent
+  # Số lượng Pgpool instance (EN: number of Pgpool instances)
+  replicaCount: 2
+  # Admin credentials (EN: admin credentials)
+  adminUsername: admin
+  adminPassword: "pgpool123"
+
+# Image cho init container volume-permissions (EN: volume-permissions init container image)
+volumePermissions:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/os-shell
+    tag: 12-debian-12-r51
+    pullPolicy: IfNotPresent
+
+# Image cho metrics exporter (EN: metrics exporter image)
+metrics:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgres-exporter
+    tag: 0.17.1-debian-12-r0
+    pullPolicy: IfNotPresent
+
+# Witness node image (nếu dùng) (EN: witness node image if used)
+witness:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/postgresql-repmgr
+    tag: 17.6.0-debian-12-r2
+    pullPolicy: IfNotPresent
+
+# Persistence — lưu trữ dữ liệu (EN: persistence — data storage)
+persistence:
+  enabled: true
+  size: 8Gi
+
+# Run command:
+# helm upgrade --install postgresql-ha oci://registry-1.docker.io/bitnamicharts/postgresql-ha -n database --values values.yaml --wait

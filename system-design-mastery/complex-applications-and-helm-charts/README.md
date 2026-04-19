@@ -1,5 +1,9 @@
 # Complex Applications and Helm Charts
 
+> **Module 4.3 — Database Scaling:** bộ chart PostgreSQL HA, Redis cluster, MongoDB sharded và Cassandra (Bitnami + `bitnamilegacy`) được **duy trì chính** trong [`../database-scaling/helm/`](../database-scaling/helm/) cùng README giải thích HA vs sharding. Thư mục này giữ bản mẫu Helm tổng quát; có thể đồng bộ hoặc gỡ trùng theo repo của bạn.
+>
+> **(EN)** The four database Helm examples are **canonical** under [`../database-scaling/helm/`](../database-scaling/helm/) with HA/sharding notes. This folder remains a general Helm lab; dedupe locally if you prefer a single copy.
+
 ## Mục tiêu / Objective
 
 ### Tiếng Việt

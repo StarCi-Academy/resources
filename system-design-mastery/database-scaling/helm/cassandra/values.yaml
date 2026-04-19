@@ -1,0 +1,50 @@
+# Helm chart Apache Cassandra — image bitnamilegacy (override từ bitnami/*)
+# (EN: Apache Cassandra chart — bitnamilegacy images overriding bitnami/*)
+# Chart: oci://registry-1.docker.io/bitnamicharts/cassandra
+# File gốc: values.origin.yaml
+
+image:
+  registry: docker.io
+  repository: bitnamilegacy/cassandra
+  tag: 5.0.5-debian-12-r7
+  pullPolicy: IfNotPresent
+
+dynamicSeedDiscovery:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/os-shell
+    tag: 12-debian-12-r50
+    pullPolicy: IfNotPresent
+
+volumePermissions:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/os-shell
+    tag: 12-debian-12-r50
+    pullPolicy: IfNotPresent
+
+metrics:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/cassandra-exporter
+    tag: 2.3.8-debian-12-r51
+    pullPolicy: IfNotPresent
+
+# 3 replica — ring Cassandra, HA chịu mất 1 node (tùy RF consistency)
+# (EN: 3 replicas — Cassandra ring; HA tolerates one node loss depending on RF/consistency)
+replicaCount: 3
+
+cluster:
+  seedCount: 2
+
+dbUser:
+  forcePassword: true
+  password: "cassandra123"
+
+persistence:
+  enabled: true
+  size: 8Gi
+
+# Run command:
+# helm upgrade --install cassandra oci://registry-1.docker.io/bitnamicharts/cassandra -n database --values values.yaml --wait

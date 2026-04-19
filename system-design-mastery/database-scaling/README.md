@@ -1,96 +1,80 @@
-# Database Scaling — Read Replica + Sharding
+# Database Scaling — Read Replica, Sharding & Helm clusters
 
-Demo 2 kỹ thuật scale DB: **Read Replica** (tách reads khỏi writes) và **Sharding** (băm data ra nhiều host).
-(EN: Demos 2 DB scaling techniques: Read Replica and Sharding.)
-
-> Gắn với bài **Module 4.3 — Database Scaling**.
+Module **4.3 — Database Scaling**: gồm **Helm charts** (PostgreSQL HA, Redis Cluster, MongoDB Sharded, Cassandra) và **example-backend** NestJS ping/ghi cả bốn nguồn.
 
 ---
 
-## Flow
+## Cấu trúc thư mục
 
 ```
-POST /users                     GET /users                 GET /users?strong=1
-       │                              │                            │
-       ▼                              ▼                            ▼
-   [Primary :5432]              [Replica :5433]              [Primary :5432]
-       │                              ▲
-       │   streaming replication      │
-       └──────────────────────────────┘
+database-scaling/
+├── helm/                    # Bitnami OCI + override image bitnamilegacy
+│   ├── postgresql-ha/
+│   ├── redis-cluster/
+│   ├── mongodb-sharded/
+│   └── cassandra/
+├── example-backend/         # NestJS — TypeORM + Mongoose + ioredis Cluster + cassandra-driver
+└── README.md
 ```
-
-- Writes luôn đi primary.
-- Reads thường đi replica (rẻ hơn, scale được).
-- Reads strong consistency (vd: ngay sau write) bắt buộc đi primary để tránh replication lag.
 
 ---
 
-## Install & run
+## Example backend (NestJS)
+
+Xem [`example-backend/README.md`](example-backend/README.md).
+
+Tóm tắt:
 
 ```bash
+cd example-backend
 npm install
-
-# Bật primary + replica (có sẵn streaming replication qua Bitnami)
-docker compose -f .docker/postgresql.yaml up -d
-
-# Seed schema vào primary — replica sẽ tự đồng bộ
-docker exec -i db-scaling-primary psql -U app -d appdb < .docker/init.sql
-
+cp .env.example .env
 npx nest start --watch
 ```
 
+- `GET /integrations` — ping **Postgres (Pgpool)**, **Redis Cluster**, **MongoDB (mongos)**, **Cassandra**.
+- `POST /integrations/demo-write` — ghi mẫu Mongo + Cassandra + Redis counter.
+
+Cassandra dùng package **`cassandra-driver`** với Nest provider (`src/cassandra/`), không có `@nestjs/cassandra` official.
+
 ---
 
-## Test
+## Kubernetes + Helm — 4 ví dụ HA / sharding (Bitnami)
+
+Chart từ `oci://registry-1.docker.io/bitnamicharts/*`; `values.yaml` override image sang **`docker.io/bitnamilegacy/*`**. Chi tiết: [`helm/README.md`](helm/README.md).
+
+| Stack | Chart | Ý chính |
+|-------|-------|---------|
+| PostgreSQL HA | `postgresql-ha` | Repmgr + standby; client qua **Pgpool** |
+| Redis Cluster | `redis-cluster` | Hash slots; master/replica |
+| MongoDB Sharded | `mongodb-sharded` | **Mongos** + shards |
+| Cassandra | `cassandra` | Ring + RF/CL; CQL |
+
+### Triển khai nhanh
 
 ```bash
-# 1) Tạo user (đi primary)
-curl -X POST http://localhost:3000/users \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"c@example.com","name":"Charlie"}'
-
-# 2) Đọc từ replica (mặc định)
-curl http://localhost:3000/users
-
-# 3) Đọc strong từ primary (dùng cho flow critical)
-curl "http://localhost:3000/users?strong=1"
-
-# 4) Check shard — id=7 trong 4 shard
-curl http://localhost:3000/users/7/shard
-# { "userId": 7, "shardIndex": 3, "totalShards": 4 }
+cd helm/postgresql-ha && chmod +x run.sh && ./run.sh && cd ../..
+cd helm/redis-cluster   && chmod +x run.sh && ./run.sh && cd ../..
+cd helm/mongodb-sharded && chmod +x run.sh && ./run.sh && cd ../..
+cd helm/cassandra       && chmod +x run.sh && ./run.sh && cd ../..
 ```
 
----
-
-## Replication Lag — bẫy thường gặp
-
-```
-write: PUT /password (primary)   →   read: GET /me (replica, lag 1s)
-                                              └─ vẫn thấy password cũ → "Sai mật khẩu"
-```
-
-Fix: luồng "vừa write xong lại read" phải đọc primary (`strong=1` trong demo).
-
----
-
-## Sharding — các trap phải tránh
-
-| Trap | Mô tả | Cách né |
-|---|---|---|
-| **Hotspot** | 1 celebrity nằm ở shard A → shard A ngập, shard B rảnh | Shard key cần phân bố đều; dùng composite key |
-| **Cross-shard JOIN** | `users` ở shard A, `orders` ở shard B | Aggregate ở application layer |
-| **Resharding đau** | Tăng từ 4 shard → 8 shard → 75% data phải di chuyển (với modulo) | Consistent hashing |
-
----
-
-## Cleanup
+### Cleanup Helm
 
 ```bash
-docker compose -f .docker/postgresql.yaml down -v
+helm uninstall postgresql-ha redis-cluster mongodb-sharded cassandra -n database 2>/dev/null
+kubectl delete pvc --all -n database
+kubectl delete namespace database
 ```
 
 ---
 
-## References
-- [Bitnami PostgreSQL Replication](https://hub.docker.com/r/bitnami/postgresql)
-- [Consistent Hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
+## Liên kết
+
+- [Bitnami postgresql-ha chart](https://github.com/bitnami/charts/tree/main/bitnami/postgresql-ha)
+- [Bitnami redis-cluster chart](https://github.com/bitnami/charts/tree/main/bitnami/redis-cluster)
+- [Bitnami mongodb-sharded chart](https://github.com/bitnami/charts/tree/main/bitnami/mongodb-sharded)
+- [Bitnami cassandra chart](https://github.com/bitnami/charts/tree/main/bitnami/cassandra)
+- [cassandra-driver (Node.js)](https://docs.datastax.com/en/developer-driver-nodejs-docs/)
+
+Bài **Complex applications and Helm charts** có thể trùng mẫu; bản gom cho 4.3 nằm tại `helm/` + `example-backend/` trong module này.
