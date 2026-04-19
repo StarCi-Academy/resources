@@ -1,0 +1,26 @@
+# Khai báo API version cho Pod (EN: declare API version for Pod)
+apiVersion: v1
+# Pod Redis — cache store dùng cho cả 3 layer cache của cache-app
+# (EN: Redis Pod — cache store for all 3 cache layers of cache-app)
+kind: Pod
+metadata:
+  # Tên Pod (EN: Pod name)
+  name: redis-pod
+  labels:
+    # Label để Service selector match (EN: label for Service selector)
+    app: redis
+spec:
+  containers:
+    - # Tên container (EN: container name)
+      name: redis
+      # Image Redis chính thức (EN: official Redis image)
+      image: redis:7-alpine
+      # Bật append-only để data không mất khi restart pod
+      # (EN: enable AOF so data survives pod restart within lifetime)
+      args: ['redis-server', '--appendonly', 'yes']
+      ports:
+        - # Cổng mặc định Redis (EN: default Redis port)
+          containerPort: 6379
+
+# Run command:
+# kubectl apply -f redis-pod.yaml

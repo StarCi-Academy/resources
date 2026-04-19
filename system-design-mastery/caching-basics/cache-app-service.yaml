@@ -1,0 +1,18 @@
+# Khai báo API version cho Service (EN: declare API version for Service)
+apiVersion: v1
+# ClusterIP Service cho cache-app — Nginx sẽ làm upstream reverse-proxy vào service này
+# (EN: ClusterIP Service for cache-app — Nginx reverse-proxies into this service)
+kind: Service
+metadata:
+  name: cache-app-service
+spec:
+  # ClusterIP để test + làm upstream cho Nginx (EN: ClusterIP — upstream for Nginx)
+  type: ClusterIP
+  selector:
+    app: cache-app
+  ports:
+    - port: 3000
+      targetPort: 3000
+
+# Run command:
+# kubectl apply -f cache-app-service.yaml

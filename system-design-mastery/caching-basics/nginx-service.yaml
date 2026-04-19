@@ -1,0 +1,20 @@
+# Khai báo API version cho Service (EN: declare API version for Service)
+apiVersion: v1
+# NodePort Service expose Nginx ra ngoài cluster — entrypoint cho client
+# (EN: NodePort Service exposing Nginx outside the cluster — client entrypoint)
+kind: Service
+metadata:
+  name: nginx-cache-service
+spec:
+  # NodePort để curl từ máy host (EN: NodePort so we can curl from host)
+  type: NodePort
+  selector:
+    app: nginx-cache
+  ports:
+    - port: 80
+      targetPort: 80
+      # Cổng cố định 30080 cho dễ nhớ (EN: fixed NodePort 30080 for convenience)
+      nodePort: 30080
+
+# Run command:
+# kubectl apply -f nginx-service.yaml

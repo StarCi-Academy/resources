@@ -1,0 +1,58 @@
+# Khai báo API version cho Deployment (EN: declare API version for Deployment)
+apiVersion: apps/v1
+# Deployment cache-app — stateless, Redis giữ state cache → scale thoải mái
+# (EN: Deployment cache-app — stateless, state lives in Redis → safe to scale)
+kind: Deployment
+metadata:
+  name: cache-app
+  labels:
+    app: cache-app
+spec:
+  # 2 replica để minh hoạ nhiều pod cùng dùng chung 1 Redis
+  # (EN: 2 replicas to show multiple pods sharing a single Redis cache)
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cache-app
+  template:
+    metadata:
+      labels:
+        app: cache-app
+    spec:
+      containers:
+        - name: cache-app
+          # Image isolate cache-app (EN: isolated cache-app image)
+          image: starci183/caching-cache-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: APP_NAME
+              value: "cache-app"
+            - # Postgres qua K8s DNS (EN: Postgres via K8s DNS)
+              name: POSTGRES_HOST
+              value: "postgres-service.default.svc.cluster.local"
+            - name: POSTGRES_PORT
+              value: "5432"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres"
+            - name: POSTGRES_DATABASE
+              value: "products"
+            - # Redis qua K8s DNS — shared cache giữa các pod (EN: Redis DNS — shared cache across pods)
+              name: REDIS_HOST
+              value: "redis-service.default.svc.cluster.local"
+            - name: REDIS_PORT
+              value: "6379"
+          readinessProbe:
+            httpGet:
+              path: /products/health
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+# Run command:
+# kubectl apply -f cache-app-deployment.yaml

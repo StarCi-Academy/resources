@@ -1,0 +1,67 @@
+# ConfigMap chứa nginx.conf cho reverse-proxy cache
+# (EN: ConfigMap holding nginx.conf for the reverse-proxy cache)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nginx-cache-config
+data:
+  # Nginx đọc file này qua volumeMount (EN: mounted into Nginx via volume)
+  nginx.conf: |
+    # Khai báo worker + event cho Nginx (EN: declare worker + events)
+    worker_processes auto;
+    events { worker_connections 1024; }
+
+    http {
+      # Khai báo vùng cache trên disk 100MB, metadata 10MB in-memory
+      # (EN: on-disk cache 100MB, 10MB in-memory metadata)
+      proxy_cache_path /var/cache/nginx
+        levels=1:2
+        keys_zone=api_cache:10m
+        max_size=100m
+        inactive=60m
+        use_temp_path=off;
+
+      # Upstream trỏ tới cache-app Service trong cluster
+      # (EN: upstream points to cache-app Service inside the cluster)
+      upstream cache_app_upstream {
+        server cache-app-service.default.svc.cluster.local:3000;
+      }
+
+      server {
+        listen 80;
+
+        # Log HIT/MISS để debug — client xem qua header X-Cache-Status
+        # (EN: surface HIT/MISS via X-Cache-Status header for debugging)
+        add_header X-Cache-Status $upstream_cache_status always;
+
+        # GET /products/* sẽ được Nginx cache ở edge
+        # (EN: GET /products/* is cached at the edge by Nginx)
+        location /products {
+          proxy_pass http://cache_app_upstream;
+
+          # Bật cache zone đã khai báo (EN: enable declared cache zone)
+          proxy_cache api_cache;
+
+          # Key cache gồm method + host + URI (EN: cache key composition)
+          proxy_cache_key "$request_method$host$request_uri";
+
+          # Cache status 200 trong 30s (EN: cache 200 OK for 30s)
+          proxy_cache_valid 200 30s;
+
+          # Gộp concurrent miss → chỉ 1 request đi xuống backend (chống thundering herd)
+          # (EN: coalesce concurrent misses → only one request reaches backend)
+          proxy_cache_lock on;
+
+          # Serve data cũ khi backend lỗi → graceful degradation
+          # (EN: serve stale cache on backend failure → graceful degradation)
+          proxy_cache_use_stale error timeout updating http_500 http_502 http_503 http_504;
+
+          # Chỉ cache GET (mặc định); PUT/POST luôn pass-through
+          # (EN: cache only GET by default; PUT/POST always pass through)
+          proxy_cache_methods GET HEAD;
+        }
+      }
+    }
+
+# Run command:
+# kubectl apply -f nginx-configmap.yaml

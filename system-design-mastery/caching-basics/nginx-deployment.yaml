@@ -1,0 +1,50 @@
+# Khai báo API version cho Deployment (EN: declare API version for Deployment)
+apiVersion: apps/v1
+# Nginx reverse-proxy đứng trước cache-app — layer cache ngoài cùng
+# (EN: Nginx reverse-proxy in front of cache-app — outermost cache layer)
+kind: Deployment
+metadata:
+  name: nginx-cache
+  labels:
+    app: nginx-cache
+spec:
+  # 1 replica là đủ cho demo (EN: 1 replica is enough for demo)
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-cache
+  template:
+    metadata:
+      labels:
+        app: nginx-cache
+    spec:
+      containers:
+        - name: nginx
+          # Image Nginx chính thức (EN: official Nginx image)
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - # Mount nginx.conf từ ConfigMap (EN: mount nginx.conf from ConfigMap)
+              name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+            - # emptyDir cho /var/cache/nginx — cache ephemeral theo pod
+              # (EN: emptyDir for /var/cache/nginx — ephemeral per-pod cache)
+              name: cache-volume
+              mountPath: /var/cache/nginx
+          readinessProbe:
+            httpGet:
+              path: /products/health
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: nginx-cache-config
+        - name: cache-volume
+          emptyDir: {}
+
+# Run command:
+# kubectl apply -f nginx-deployment.yaml

@@ -1,0 +1,30 @@
+# Khai báo API version cho Pod (EN: declare API version for Pod resource)
+apiVersion: v1
+# Loại tài nguyên là Pod — Postgres đơn lẻ cho demo (EN: resource type is Pod — single Postgres for demo)
+kind: Pod
+metadata:
+  # Tên Pod (EN: Pod name)
+  name: postgres-pod
+  labels:
+    # Label để Service selector match đúng Pod này (EN: label for Service selector)
+    app: postgres
+spec:
+  containers:
+    - # Tên container bên trong Pod (EN: container name inside the Pod)
+      name: postgres
+      # Image Postgres chính thức từ Docker Hub (EN: official Postgres image from Docker Hub)
+      image: postgres:16-alpine
+      ports:
+        - # Cổng mặc định Postgres (EN: default Postgres port)
+          containerPort: 5432
+      env:
+        - name: POSTGRES_USER
+          value: postgres
+        - name: POSTGRES_PASSWORD
+          value: postgres
+        - # Database dùng cho demo caching (EN: database for caching demo)
+          name: POSTGRES_DB
+          value: products
+
+# Run command:
+# kubectl apply -f postgres-pod.yaml

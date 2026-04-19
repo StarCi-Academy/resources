@@ -1,0 +1,18 @@
+# Khai báo API version cho Service (EN: declare API version for Service)
+apiVersion: v1
+# ClusterIP Service — DNS nội bộ cho Redis (EN: ClusterIP Service — internal DNS for Redis)
+kind: Service
+metadata:
+  # cache-app kết nối qua: redis-service.default.svc.cluster.local (EN: cache-app connects via this DNS)
+  name: redis-service
+spec:
+  type: ClusterIP
+  selector:
+    # Match Redis Pod label (EN: match Redis Pod label)
+    app: redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+
+# Run command:
+# kubectl apply -f redis-service.yaml

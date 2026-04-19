@@ -1,0 +1,19 @@
+# Khai báo API version cho Service (EN: declare API version for Service)
+apiVersion: v1
+# ClusterIP Service — DNS nội bộ cho Postgres (EN: ClusterIP Service — internal DNS for Postgres)
+kind: Service
+metadata:
+  # Tên Service — app resolve qua postgres-service.default.svc.cluster.local (EN: apps connect via this DNS)
+  name: postgres-service
+spec:
+  # ClusterIP — chỉ truy cập từ trong cluster (EN: ClusterIP — internal only)
+  type: ClusterIP
+  selector:
+    # Selector khớp label Postgres Pod (EN: selector matches Postgres Pod label)
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+# Run command:
+# kubectl apply -f postgres-service.yaml
