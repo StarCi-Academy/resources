@@ -11,7 +11,7 @@
 # Konga/Kong Manager to CRUD services/routes/plugins/consumers at runtime)
 #
 # Luồng khởi động (EN: Startup flow):
-#   1. kong-database (PostgreSQL) khởi động và healthy
+#   1. starci-kong-db (PostgreSQL) khởi động và healthy
 #   2. kong-migrations chạy `kong migrations bootstrap` tạo schema
 #   3. kong gateway khởi động và kết nối tới database
 
@@ -20,17 +20,16 @@ services:
   # PostgreSQL — lưu cấu hình Kong
   # (EN: PostgreSQL — stores Kong configuration)
   # =========================
-  kong-database:
-    image: docker.io/postgres:16-alpine
-    container_name: kong-database
+  starci-kong-db:
+    image: docker.io/postgres:12-alpine
+    container_name: starci-kong-db
     environment:
       POSTGRES_USER: kong
       POSTGRES_DB: kong
       POSTGRES_PASSWORD: kongpass
     volumes:
-      # Persist dữ liệu Kong qua các lần restart
-      # (EN: Persist Kong data across restarts)
-      - kong-db-data:/var/lib/postgresql/data
+      # Persist dữ liệu Kong qua các lần restart (EN: Persist Kong data across restarts)
+      - starci-kong-db-data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
@@ -47,38 +46,40 @@ services:
   # (EN: Kong Migrations — bootstrap schema for the database)
   # Container này chạy 1 lần rồi exit (EN: runs once then exits)
   # =========================
-  kong-migrations:
+  starci-kong-migrations:
     image: docker.io/kong:3.9
-    container_name: kong-migrations
+    container_name: starci-kong-migrations
     command: kong migrations bootstrap
     depends_on:
-      kong-database:
+      starci-kong-db:
         condition: service_healthy
     environment:
       KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
+      KONG_PG_HOST: starci-kong-db
       KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kongpass
       KONG_PG_DATABASE: kong
     restart: on-failure
+    volumes:
+      - starci-kong-migrations-data:/var/lib/postgresql/data
 
   # =========================
   # Kong Gateway — API Gateway chính
   # (EN: Kong Gateway — main API gateway)
   # =========================
-  kong:
+  starci-kong-gateway:
     image: docker.io/kong:3.9
-    container_name: kong-gateway
+    container_name: starci-kong-gateway
     depends_on:
-      kong-database:
+      starci-kong-db:
         condition: service_healthy
-      kong-migrations:
+      starci-kong-migrations:
         condition: service_completed_successfully
     environment:
       # Dùng PostgreSQL thay vì DB-less (EN: use PostgreSQL instead of DB-less)
       KONG_DATABASE: postgres
-      KONG_PG_HOST: kong-database
+      KONG_PG_HOST: starci-kong-db
       KONG_PG_PORT: 5432
       KONG_PG_USER: kong
       KONG_PG_PASSWORD: kongpass
@@ -96,14 +97,11 @@ services:
       KONG_PROXY_ERROR_LOG: /dev/stderr
       KONG_ADMIN_ERROR_LOG: /dev/stderr
     ports:
-      # Port proxy — client gửi request qua đây
-      # (EN: Proxy port — clients send requests through this)
+      # Port proxy — client gửi request qua đây (EN: Proxy port — clients send requests through this)
       - "8000:8000"
-      # Port admin API — quản lý Kong qua REST
-      # (EN: Admin API port — manage Kong via REST)
+      # Port admin API — quản lý Kong qua REST (EN: Admin API port — manage Kong via REST)
       - "8001:8001"
-      # Port Kong Manager — GUI quản trị
-      # (EN: Kong Manager port — admin GUI)
+      # Port Kong Manager — GUI quản trị (EN: Kong Manager port — admin GUI)
       - "8002:8002"
     # Cho phép Kong truy cập services chạy trên host (NestJS :3001, :3002, :3003)
     # (EN: Allow Kong to access services running on host)
@@ -117,15 +115,15 @@ services:
   # Tách DB để không đụng schema của Kong
   # (EN: Separate DB to avoid clashing with Kong schema)
   # =========================
-  konga-database:
-    image: docker.io/postgres:16-alpine
-    container_name: konga-database
+  starci-konga-db:
+    image: docker.io/postgres:11-alpine
+    container_name: starci-konga-db
     environment:
       POSTGRES_USER: konga
       POSTGRES_DB: konga
       POSTGRES_PASSWORD: kongapass
     volumes:
-      - konga-db-data:/var/lib/postgresql/data
+      - starci-konga-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "konga", "-d", "konga"]
       interval: 5s
@@ -138,14 +136,16 @@ services:
   # (EN: Konga Migrations — prepare schema for Konga DB)
   # Chạy 1 lần rồi exit (EN: runs once then exits)
   # =========================
-  konga-migrations:
+  starci-konga-migrations:
     image: docker.io/pantsel/konga:next
-    container_name: konga-migrations
-    command: "-c prepare -a postgres -u postgresql://konga:kongapass@konga-database:5432/konga"
+    container_name: starci-konga-migrations
+    command: "-c prepare -a postgres -u postgresql://konga:kongapass@starci-konga-db:5432/konga"
     depends_on:
-      konga-database:
+      starci-konga-db:
         condition: service_healthy
     restart: on-failure
+    volumes:
+      - starci-konga-migrations-data:/var/lib/postgresql/data
 
   # =========================
   # Konga — GUI quản lý Kong (3rd party)
@@ -153,15 +153,15 @@ services:
   # Truy cập tại http://localhost:1337
   # (EN: Access at http://localhost:1337)
   # =========================
-  konga:
+  starci-konga:
     image: docker.io/pantsel/konga:next
-    container_name: konga
+    container_name: starci-konga
     depends_on:
-      konga-database:
+      starci-konga-db:
         condition: service_healthy
-      konga-migrations:
+      starci-konga-migrations:
         condition: service_completed_successfully
-      kong:
+      starci-kong-gateway:
         condition: service_started
     environment:
       # Chế độ production (EN: production mode)
@@ -169,7 +169,7 @@ services:
       # Kết nối Konga DB để lưu users, connections, snapshots
       # (EN: Connect Konga DB to store users, connections, snapshots)
       DB_ADAPTER: postgres
-      DB_HOST: konga-database
+      DB_HOST: starci-konga-db
       DB_PORT: "5432"
       DB_USER: konga
       DB_PASSWORD: kongapass
@@ -185,8 +185,10 @@ services:
     restart: unless-stopped
 
 volumes:
-  kong-db-data:
-  konga-db-data:
+  starci-kong-db-data:
+  starci-kong-migrations-data:
+  starci-konga-db-data:
+  starci-konga-migrations-data:
 
 # Run command:
 # docker compose -f .docker/kong.yaml up -d
