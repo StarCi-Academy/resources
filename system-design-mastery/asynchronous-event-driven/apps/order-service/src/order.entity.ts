@@ -6,15 +6,15 @@ import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
  */
 @Entity()
 export class Order {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
+
+  @Column({nullable: true})
+  productName!: string;
 
   @Column()
-  productName: string;
-
-  @Column()
-  quantity: number;
+  quantity!: number;
 
   @Column({ default: 'PENDING' })
-  status: string;
+  status!: string;
 }

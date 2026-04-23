@@ -25,7 +25,9 @@ export class AppService implements OnModuleInit {
    */
   async onModuleInit() {
     await this.kafkaClient.connect();
-    this.logger.log({ message: 'Kafka producer đã kết nối (EN: Kafka producer connected)' });
+    this.logger.log({
+      message: 'Kafka producer đã kết nối (EN: Kafka producer connected)',
+    });
   }
 
   /**
@@ -46,9 +48,16 @@ export class AppService implements OnModuleInit {
    */
   async createOrder(productName: string, quantity: number): Promise<Order> {
     // Bước 1: Tạo đơn hàng trong database (EN: Step 1: Create order in database)
-    const order = this.orderRepository.create({ productName, quantity, status: 'PENDING' });
+    const order = this.orderRepository.create({
+      productName,
+      quantity,
+      status: 'PENDING',
+    });
     const saved = await this.orderRepository.save(order);
-    this.logger.log({ message: 'Đơn hàng đã tạo (EN: order created)', orderId: saved.id });
+    this.logger.log({
+      message: 'Đơn hàng đã tạo (EN: order created)',
+      orderId: saved.id,
+    });
 
     // Bước 2: Publish event "order-events" lên Kafka topic
     // (EN: Step 2: Publish "order-events" event to Kafka topic)
@@ -62,7 +71,10 @@ export class AppService implements OnModuleInit {
       timestamp: new Date().toISOString(),
     });
 
-    this.logger.log({ message: 'Event ORDER_CREATED đã publish (EN: ORDER_CREATED event published)', orderId: saved.id });
+    this.logger.log({
+      message: 'Event ORDER_CREATED đã publish (EN: ORDER_CREATED event published)',
+      orderId: saved.id,
+    });
     return saved;
   }
 }

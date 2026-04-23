@@ -2,8 +2,8 @@
 # (EN: Docker Compose for Apache Kafka + KRaft — no Zookeeper needed)
 
 services:
-  kafka:
-    image: docker.io/bitnami/kafka:3.9
+  kafka-event-driven:
+    image: docker.io/bitnamilegacy/kafka:3.9
     container_name: kafka-event-driven
     ports:
       # Port cho client kết nối từ host (EN: port for client connection from host)
@@ -12,7 +12,7 @@ services:
       # Chế độ KRaft — không cần Zookeeper (EN: KRaft mode — no Zookeeper needed)
       - KAFKA_CFG_NODE_ID=0
       - KAFKA_CFG_PROCESS_ROLES=controller,broker
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:9093
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka-event-driven:9093
       # Listeners cho giao tiếp nội bộ và bên ngoài
       # (EN: Listeners for internal and external communication)
       - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093
