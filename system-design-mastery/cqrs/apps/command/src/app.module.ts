@@ -4,7 +4,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { AppController } from './app.controller';
 import { Customer } from './entities/customer.entity';
-import { UpdateCustomerProfileHandler } from './handlers/update-customer-profile.handler';
+import {
+  IntegrationUpdatedCustomerProfileHandler,
+  UpdateCustomerProfileHandler,
+} from './handlers';
 
 @Module({
   imports: [
@@ -14,9 +17,9 @@ import { UpdateCustomerProfileHandler } from './handlers/update-customer-profile
       type: 'postgres',
       host: 'localhost',
       port: 5432,
-      username: 'myuser',
-      password: 'mypassword',
-      database: 'cqrs_write_db',
+      username: 'cqrs_user',
+      password: 'cqrs_password',
+      database: 'cqrs_db',
       autoLoadEntities: true,
       synchronize: true, // Only for demo
     }),
@@ -37,6 +40,6 @@ import { UpdateCustomerProfileHandler } from './handlers/update-customer-profile
     ]),
   ],
   controllers: [AppController],
-  providers: [UpdateCustomerProfileHandler],
+  providers: [UpdateCustomerProfileHandler, IntegrationUpdatedCustomerProfileHandler],
 })
-export class AppModule { }
+export class AppModule {}

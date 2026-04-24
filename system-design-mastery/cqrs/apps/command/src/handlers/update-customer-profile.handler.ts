@@ -1,7 +1,5 @@
 import { CommandHandler, ICommandHandler, EventBus } from '@nestjs/cqrs';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Inject } from '@nestjs/common';
-import { ClientProxy } from '@nestjs/microservices';
 import { Repository } from 'typeorm';
 import { UpdateCustomerProfileCommand } from '../commands';
 import { CustomerProfileUpdatedEvent } from '../events/customer-profile-updated.event';
@@ -20,14 +18,10 @@ export class UpdateCustomerProfileHandler implements ICommandHandler<UpdateCusto
     // Bus nội bộ của NestJS (EN: NestJS internal EventBus)
     private readonly eventBus: EventBus,
 
-    // Client kết nối tới RabbitMQ (EN: RabbitMQ microservice client)
-    @Inject('EVENT_BUS')
-    private readonly client: ClientProxy,
-
     // Repository cho Write Model (EN: Repository for Write Model)
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
-  ) { }
+  ) {}
 
   /**
    * Thực thi logic cập nhật (EN: Execute update logic)
@@ -55,13 +49,10 @@ export class UpdateCustomerProfileHandler implements ICommandHandler<UpdateCusto
     // Phát tán local event (EN: publish local event)
     this.eventBus.publish(new CustomerProfileUpdatedEvent(id, name, email));
 
-    // Phát tán qua RabbitMQ để Sync sang Read Model (EN: emit via RabbitMQ to sync with Read Model)
-    this.client.emit('customer_profile_updated', { id, name, email });
-
     return {
       success: true,
-      message: "Customer profile updated in Write Model and Sync Event emitted via RabbitMQ",
-      id
+      message: 'Customer profile updated in Write Model and local domain event published',
+      id,
     };
   }
 }
