@@ -15,6 +15,9 @@ async function bootstrap() {
       consumer: {
         groupId: 'order-consumer',
       },
+      producer: {
+        allowAutoTopicCreation: true,
+      },
     },
   });
 
