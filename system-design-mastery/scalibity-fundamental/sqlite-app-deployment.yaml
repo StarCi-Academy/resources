@@ -22,8 +22,8 @@ spec:
         - # Tên container (EN: container name)
           name: sqlite-app
           # Image isolate cho sqlite-app (EN: isolated image for sqlite-app)
-          image: starci183/scalibity-sqlite-app:latest
-          imagePullPolicy: Always
+          image: starci183/scalibity-sqlite-app:1.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
           env:

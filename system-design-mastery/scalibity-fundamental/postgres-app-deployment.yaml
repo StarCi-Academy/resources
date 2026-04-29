@@ -25,9 +25,9 @@ spec:
         - # Tên container (EN: container name)
           name: postgres-app
           # Image isolate cho postgres-app (EN: isolated image for postgres-app)
-          image: starci183/scalibity-postgres-app:latest
+          image: starci183/scalibity-postgres-app:1.0
           # Luôn pull image mới nhất (EN: always pull latest)
-          imagePullPolicy: Always
+          imagePullPolicy: Never
           ports:
             - # Cổng HTTP NestJS lắng nghe (EN: HTTP port NestJS listens on)
               containerPort: 3000

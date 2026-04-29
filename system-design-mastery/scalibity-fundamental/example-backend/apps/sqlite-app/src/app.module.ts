@@ -15,7 +15,7 @@ import { Note } from '../../../libs/note.entity';
   imports: [
     TypeOrmModule.forRoot({
       type: 'sqlite',
-      database: process.env.SQLITE_PATH ?? '/data/notes.db',
+      database: process.env.SQLITE_PATH ?? '@app/sqlite-app/data/notes.db',
       entities: [Note],
       synchronize: true,
     }),
